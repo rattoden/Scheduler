@@ -4,7 +4,7 @@ using SchedulerV4.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ѕуть к базе внутри проекта Ч "Data/FIRST_DB.FDB"
+// ѕуть к базе внутри проекта Ч "Data/FIRST_DB.FDB" dfjdfbhv
 var dbFilePath = Path.Combine(builder.Environment.ContentRootPath, "Data", "FIRST_DB.FDB");
 
 // ‘ормируем корректную строку подключени€ дл€ Firebird
