@@ -1,181 +1,41 @@
-﻿@model List<SchedulerV4.Models.ScheduleNPublEntity>
-
-@{
-    ViewData["Title"] = "Расписание";
-    var groupList = ViewBag.GroupList as List<SelectListItem>;
-    int? filteredGroupNo = ViewBag.FilteredGroupNo as int?;
+﻿@{
+    ViewData["Title"] = "Расписание группы";
+    int groupId = Convert.ToInt32(Context.Request.Query["groupId"]);
+    int groupNo = ViewBag.GroupNo;
 }
 
-<h1>Расписание занятий</h1>
-
-<div class="form-row">
-    <label for="groupSelect">Номер группы:</label>
-    <select id="groupSelect" name="groupId">
-        <option value="">-- Все группы --</option>
-        @foreach (var group in groupList)
-        {
-            <option value="@group.Value">@group.Text</option>
-        }
-    </select>
-    <button type="button" id="showScheduleBtn">Показать расписание</button>
-</div>
-<button type="button" onclick="location.href='/SchedulerNPubl/Create'">Добавить занятие</button>
-<h2 style="text-align:center; margin-top: 30px;">
-    @if (filteredGroupNo.HasValue)
-    {
-        <text>Группа @filteredGroupNo</text>
-    }
-    else
-    {
-        <text>Все группы</text>
-    }
-</h2>
+<h1>Расписание группы @groupNo</h1>
 
 <table>
     <thead>
         <tr>
-            <th>Группа</th>
             <th>День</th>
-            <th>Время</th>
             <th>Дата</th>
+            <th>Время</th>
+            <th>Тип</th>
             <th>Дисциплина</th>
-            <th>Вид занятия</th>
-            <th>Аудитория</th>
             <th>Здание</th>
+            <th>Аудитория</th>
             <th>Преподаватель</th>
-            <th>Тип занятия</th>
-            <th>Год расписания</th>
-            <th>Семестр</th>
-            <th></th>
         </tr>
     </thead>
     <tbody>
         @foreach (var item in Model)
         {
             <tr>
-                <td>@item.GROUPNO</td>
                 <td>@item.DEN</td>
-                <td>@item.VREM</td>
                 <td>@item.DATA</td>
-                <td>@item.Discipline?.NAME</td>
+                <td>@item.VREM</td>
                 <td>@item.FORM_ZAN</td>
-                <td>@item.AUDITORIYA</td>
+                <td>@item.Discipline?.NAME</td>
                 <td>@item.ZDANIE</td>
+                <td>@item.AUDITORIYA</td>
                 <td>@item.PREPODAVATEL</td>
-                <td>@(item.TIP == 1 ? "дневное" : (item.TIP == 2 ? "экзамен" : "заочное"))</td>
-                <td>@item.YEARF</td>
-                <td>@(item.SEMESTR == 1 ? "осенний" : "весенний")</td>
-                <td><button class="transferBtn">Перенести</button></td>
-@*                 <form asp-action="Delete" method="post" style="display:inline;">
-                    <input type="hidden" name="ID" value="@item.ID_AUDITORY" />
-                    <button type="submit" class="btn btn-danger">Удалить</button>
-                </form> *@
             </tr>
         }
     </tbody>
 </table>
 
-<script>
-    document.getElementById('showScheduleBtn').addEventListener('click', () => {
-        const groupId = document.getElementById('groupSelect').value;
-        const query = groupId ? `?groupId=${groupId}` : '';
-        window.location.href = `/SchedulerNPubl/Index${query}`;
-    });
-</script>
-
-<style>
-    .add-btn {
-        display: inline-block;
-        padding: 10px 25px;
-        font-size: 17px;
-        background-color: #28a745;
-        color: white;
-        border-radius: 6px;
-        text-decoration: none;
-        transition: background-color 0.3s ease;
-    }
-
-        .add-btn:hover {
-            background-color: #218838;
-        }
-    .form-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
-        background: #fff;
-        padding: 30px 40px;
-        border-radius: 12px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        max-width: 800px;
-        margin: 0 auto 40px;
-    }
-
-    label {
-        font-size: 17px;
-        color: #555;
-        width:auto;
-    }
-
-    select {
-        width: 350px;
-        height: 50px;
-        font-size: 17px;
-        padding: 0 15px;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        transition: border-color 0.3s ease;
-        background-color: white;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 15px center;
-        background-size: 20px 20px;
-    }
-
-        select:focus {
-            border-color: #0088CE;
-            outline: none;
-            box-shadow: 0 0 8px rgba(0, 136, 206, 0.3);
-        }
-
-    button {
-        font-size: 17px;
-        height: 44px;
-        padding: 0 25px;
-        background: #0088CE;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        width: auto;
-    }
-
-        button:hover {
-            background: #006fa1;
-        }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    th, td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: center;
-        font-size: 12px;
-    }
-
-    th {
-        background-color: #0088CE;
-        color: white;
-    }
-</style>
 <div class="modal" id="transferModal">
     <div class="modal-content">
         <div class="modal-header">Перенос занятия</div>
@@ -231,6 +91,7 @@
 
 <style>
     body {
+        background-color: #f5f7fa;
         color: #333;
     }
 
@@ -249,9 +110,9 @@
 
     th, td {
         border: 1px solid #ddd;
-        padding: 8px 10px;
+        padding: 10px 15px;
         text-align: center;
-        font-size: 15px;
+        font-size: 18px;
     }
 
     th {

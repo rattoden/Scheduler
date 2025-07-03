@@ -1,102 +1,177 @@
 ﻿@model SchedulerV4.Models.ScheduleNPublEntity
-
 @{
-    ViewData["Title"] = "Создание расписания";
+    ViewData["Title"] = "Добавить занятие";
 }
 
-<h2>Создание расписания</h2>
+<h1 style="text-align:center; margin-bottom: 30px;">Добавление занятия</h1>
 
-<form asp-action="Create" method="post">
-    <div class="form-group">
-        <label asp-for="GROUPID">Номер группы</label>
-        <select asp-for="GROUPID" class="form-control" asp-items="ViewBag.Groups" id="GroupSelect">
+<form asp-action="Create" method="post" class="create-form">
+    <div class="form-row">
+        <label asp-for="GROUPID">Группа</label>
+        <select asp-for="GROUPID" class="form-control" asp-items="ViewBag.Groups" id="GroupSelect" required>
             <option value="">Выберите группу</option>
         </select>
         <span asp-validation-for="GROUPID" class="text-danger"></span>
     </div>
 
-    <div class="form-group">
-        <label asp-for="DEN">День недели</label>
-        <select asp-for="DEN" class="form-control" asp-items="ViewBag.DaysOfWeek" id="DayOfWeekSelect">
-            <option value="">Выберите день</option>
-        </select>
-        <span asp-validation-for="DEN" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
+    <div class="form-row">
         <label asp-for="VREM">Время</label>
-        <select asp-for="VREM" class="form-control" asp-items="ViewBag.Times" id="TimeSelect">
+        <select asp-for="VREM" class="form-control" asp-items="ViewBag.Times" id="TimeSelect" required>
             <option value="">Выберите время</option>
         </select>
         <span asp-validation-for="VREM" class="text-danger"></span>
     </div>
 
-    <div class="form-group">
-        <label asp-for="FORM_ZAN">Форма занятия</label>
-        <select asp-for="FORM_ZAN" class="form-control" asp-items="ViewBag.FormZanOptions">
-            <option value="">Выберите форму</option>
+    <div class="form-row">
+        <label asp-for="DEN">День недели</label>
+        <select asp-for="DEN" class="form-control" asp-items="ViewBag.DaysOfWeek" id="DayOfWeekSelect" required>
+            <option value="">Выберите день недели</option>
         </select>
-        <span asp-validation-for="FORM_ZAN" class="text-danger"></span>
+        <span asp-validation-for="DEN" class="text-danger"></span>
     </div>
 
-    <div class="form-group">
-        <label asp-for="DATA">Чет/нечет</label>
-        <select asp-for="DATA" class="form-control" asp-items="ViewBag.DataOptions">
-            <option value="">Выберите</option>
+    <div class="form-row">
+        <label asp-for="DATA">Дата</label>
+        <select asp-for="DATA" class="form-control" asp-items="ViewBag.DataOptions" required>
+            <option value="">Выберите дату</option>
         </select>
         <span asp-validation-for="DATA" class="text-danger"></span>
     </div>
 
-    <div class="form-group">
+    <div class="form-row">
+        <label asp-for="DISCIPL_NUM">Дисциплина</label>
+        <select asp-for="DISCIPL_NUM" class="form-control" asp-items="ViewBag.Disciplins" required>
+            <option value="">Выберите дисциплину</option>
+        </select>
+        <span asp-validation-for="DISCIPL_NUM" class="text-danger"></span>
+    </div>
+
+    <div class="form-row">
+        <label asp-for="FORM_ZAN">Вид занятия</label>
+        <select asp-for="FORM_ZAN" class="form-control" asp-items="ViewBag.FormZanOptions" required>
+            <option value="">Выберите вид занятия</option>
+        </select>
+        <span asp-validation-for="FORM_ZAN" class="text-danger"></span>
+    </div>
+
+    <div class="form-row">
+        <label asp-for="AUDITORIYA">Аудитория</label>
+        <select asp-for="AUDITORIYA" class="form-control" asp-items="ViewBag.Auditories" required>
+            <option value="">Выберите аудиторию</option>
+        </select>
+        <span asp-validation-for="AUDITORIYA" class="text-danger"></span>
+    </div>
+
+    <div class="form-row">
         <label asp-for="ZDANIE">Здание</label>
-        <select asp-for="ZDANIE" class="form-control" asp-items="ViewBag.Buildings">
+        <select asp-for="ZDANIE" class="form-control" asp-items="ViewBag.Buildings" required>
             <option value="">Выберите здание</option>
         </select>
         <span asp-validation-for="ZDANIE" class="text-danger"></span>
     </div>
 
-    <div class="form-group">
+    <div class="form-row">
+        <label asp-for="PREPODAVATEL">Преподаватель</label>
+        <select asp-for="PREPODAVATEL" class="form-control" asp-items="ViewBag.Prepodavatels" required>
+            <option value="">Выберите преподавателя</option>
+        </select>
+        <span asp-validation-for="PREPODAVATEL" class="text-danger"></span>
+    </div>
+
+    <div class="form-row">
+        <label asp-for="TIP">Тип занятия</label>
+        <select asp-for="TIP" class="form-control" required>
+            <option value="">Выберите тип занятия</option>
+            <option value="1">дневное</option>
+            <option value="2">экзамен</option>
+            <option value="3">заочное</option>
+        </select>
+        <span asp-validation-for="TIP" class="text-danger"></span>
+    </div>
+
+    <div class="form-row">
+        <label asp-for="YEARF">Год расписания</label>
+        <select asp-for="YEARF" class="form-control" required>
+            <option value="">Выберите год расписания</option>
+            @for (int year = 2020; year <= 2070; year++)
+            {
+                <option value="@year">@year</option>
+            }
+        </select>
+        <span asp-validation-for="YEARF" class="text-danger"></span>
+    </div>
+
+    <div class="form-row">
+        <label asp-for="SEMESTR">Семестр</label>
+        <select asp-for="SEMESTR" class="form-control" required>
+            <option value="">Выберите семестр</option>
+            <option value="1">дневное</option>
+            <option value="2">экзамен</option>
+        </select>
+        <span asp-validation-for="SEMESTR" class="text-danger"></span>
+    </div>
+
+    <div class="form-row">
         <input type="submit" value="Создать" class="btn btn-primary" />
     </div>
 </form>
 
-@section Scripts {
-    <script>
-        // Функция для обновления доступных временных слотов
-        function updateAvailableTimeSlots() {
-            var groupId = $("#GroupSelect").val();
-            var dayOfWeek = $("#DayOfWeekSelect").val();
+<style>
+    .create-form {
+        max-width: 700px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
 
+    .form-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 20px;
+    }
 
-            if (groupId && dayOfWeek) {
-                $.ajax({
-                    url: '@Url.Action("GetAvailableTimeSlots", "SchedulerNPubl")',
-                    data: {
-                        groupId: groupId,
-                        dayOfWeek: dayOfWeek
-                    },
-                    type: 'GET',
-                    success: function (data) {
-                        var timeSelect = $('#TimeSelect');
-                        timeSelect.empty(); // Очистить текущие значения
-                        timeSelect.append('<option value="">Выберите время</option>'); // Добавить placeholder
-                        console.log(data, groupId, dayOfWeek);
-                        // Заполняем доступными временами
-                        $.each(data, function (index, item) {
-                            console.log("EACH",index, item);
-                            timeSelect.append('<option value="' + item.value + '">' + item.text + '</option>');
-                        });
-                    },
-                    error: function () {
-                        alert("Ошибка при загрузке временных слотов.");
-                    }
-                });
-            }
+        .form-row label {
+            width: 180px;
+            font-size: 16px;
+            color: #555;
         }
 
-        // Событие при изменении группы или дня недели
-        $("#GroupSelect, #DayOfWeekSelect").change(function () {
-            updateAvailableTimeSlots();
-        });
-    </script>
-}
+        .form-row input,
+        .form-row select {
+            flex-grow: 1;
+            padding: 8px 12px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1.5px solid #ccc;
+        }
+
+    button {
+        background-color: #0088CE;
+        color: white;
+        font-size: 17px;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+        button:hover {
+            background-color: #006fa1;
+        }
+
+    .btn-cancel {
+        margin-left: 15px;
+        padding: 10px 25px;
+        background-color: #aaa;
+        border-radius: 6px;
+        text-decoration: none;
+        color: white;
+    }
+
+        .btn-cancel:hover {
+            background-color: #888;
+        }
+</style>

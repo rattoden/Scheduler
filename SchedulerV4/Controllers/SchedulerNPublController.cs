@@ -18,90 +18,125 @@ namespace SchedulerV4.Controllers
             _context = context;
         }
 
-        // GET: Index
-        public IActionResult Index(int? selectedGroup)
+        public IActionResult Schedule(int groupId)
         {
-            // Получение списка групп для селектбокса
-            var groups = _context.GROUPS
-                .Select(g => new SelectListItem
-                {
-                    Value = g.GROUPID.ToString(),
-                    Text = g.GROUPNO.ToString()
-                })
-                .ToList();
-            ViewBag.Groups = groups;
+            var group = _context.GROUPS.FirstOrDefault(g => g.GROUPID == groupId);
+            if (group == null)
+            {
+                return NotFound();
+            }
 
-            // Передача выбранной группы обратно в представление
-            ViewBag.SelectedGroup = selectedGroup?.ToString();
+            ViewBag.GroupNo = group.GROUPNO;
 
-            // Получаем расписание с включением дисциплин
-            var scheduler = _context.SHEDULE_N_PUBL
-                .Include(s => s.Discipline) // Включаем данные дисциплин
-                .Where(s => !selectedGroup.HasValue || s.GROUPID == selectedGroup.Value)
+            var schedule = _context.SHEDULE_N_PUBL
+                .Where(s => s.GROUPID == groupId)
+                .Include(s => s.Discipline)
                 .ToList();
 
-            return View(scheduler);
+            return View(schedule);
         }
 
-
-        // GET: Create
-        // GET: Create
-        // GET: Create
-        // GET: Create
-        // GET: Create
-        public IActionResult Create()
+        // GET: Index
+        public IActionResult Index(int? groupId)
         {
-            // Получение списка групп
+            // Список групп
             var groups = _context.GROUPS
+                .OrderBy(g => g.GROUPNO)
                 .Select(g => new SelectListItem
                 {
                     Value = g.GROUPID.ToString(),
                     Text = g.GROUPNO.ToString()
                 })
                 .ToList();
-            ViewBag.Groups = groups;
+            ViewBag.GroupList = groups;
 
-            // Список дней недели
-            var daysOfWeek = new List<SelectListItem>
-    {
-        new SelectListItem { Value = "ПОНЕДЕЛЬНИК", Text = "ПОНЕДЕЛЬНИК" },
-        new SelectListItem { Value = "ВТОРНИК", Text = "ВТОРНИК" },
-        new SelectListItem { Value = "СРЕДА", Text = "СРЕДА" },
-        new SelectListItem { Value = "ЧЕТВЕРГ", Text = "ЧЕТВЕРГ" },
-        new SelectListItem { Value = "ПЯТНИЦА", Text = "ПЯТНИЦА" },
-        new SelectListItem { Value = "СУББОТА", Text = "СУББОТА" }
-    };
-            ViewBag.DaysOfWeek = daysOfWeek;
+            // Фильтрация расписания
+            var schedule = _context.SHEDULE_N_PUBL
+                .Include(s => s.Discipline)
+                .AsQueryable();
 
-            // Изначально возвращаем все возможные временные слоты
-            ViewBag.Times = GetAllTimeSlots();
+            if (groupId.HasValue)
+            {
+                schedule = schedule.Where(s => s.GROUPID == groupId.Value);
+                ViewBag.FilteredGroupNo = _context.GROUPS.FirstOrDefault(g => g.GROUPID == groupId)?.GROUPNO;
+            }
 
-            // Опции для поля DATA
-            ViewBag.DataOptions = new List<SelectListItem>
-    {
-        new SelectListItem { Value = "NULL", Text = "NULL" },
-        new SelectListItem { Value = "Чет", Text = "Чет" },
-        new SelectListItem { Value = "Неч", Text = "Неч" }
-    };
+            return View(schedule.ToList());
+        }
 
-            // Опции для FORM_ZAN
-            ViewBag.FormZanOptions = new List<SelectListItem>
-    {
-        new SelectListItem { Value = "Лек.", Text = "Лек." },
-        new SelectListItem { Value = "Прак.", Text = "Прак." },
-        new SelectListItem { Value = "Л.р.", Text = "Л.р." }
-    };
-
-            // Опции для ZDANIE
-            var buildings = _context.SPR_BUILDING
-                .Select(b => new SelectListItem
+        [HttpGet]
+        public IActionResult Create()
+        {
+            ViewBag.Groups = _context.GROUPS
+                .Select(g => new SelectListItem
                 {
-                    Value = b.ID_BUILDING.ToString(),
-                    Text = b.NAME.ToString(),
+                    Value = g.GROUPID.ToString(),
+                    Text = g.GROUPNO.ToString()
                 })
                 .ToList();
 
-            ViewBag.Buildings = buildings;
+            ViewBag.Times = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "08:00", Text = "08:00" },
+        new SelectListItem { Value = "09:40", Text = "09:40" },
+        new SelectListItem { Value = "11:20", Text = "11:20" },
+        new SelectListItem { Value = "13:30", Text = "13:30" },
+        new SelectListItem { Value = "15:10", Text = "15:10" },
+        new SelectListItem { Value = "16:50", Text = "16:50" },
+        new SelectListItem { Value = "18:30", Text = "18:30" }
+    };
+
+            ViewBag.DaysOfWeek = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "пн", Text = "пн" },
+        new SelectListItem { Value = "вт", Text = "вт" },
+        new SelectListItem { Value = "ср", Text = "ср" },
+        new SelectListItem { Value = "чт", Text = "чт" },
+        new SelectListItem { Value = "пт", Text = "пт" },
+        new SelectListItem { Value = "сб", Text = "сб" }
+    };
+
+            ViewBag.DataOptions = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "чет/неч", Text = "чет/неч" },
+        new SelectListItem { Value = "чет", Text = "чет" },
+        new SelectListItem { Value = "неч", Text = "неч" }
+    };
+
+            ViewBag.Disciplins = _context.DISCIPLINES
+                .Select(d => new SelectListItem
+                {
+                    Value = d.ID.ToString(),
+                    Text = d.NAME
+                }).ToList();
+
+            ViewBag.FormZanOptions = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "лек", Text = "лек" },
+        new SelectListItem { Value = "пр", Text = "пр" },
+        new SelectListItem { Value = "л.р.", Text = "л.р." }
+    };
+
+            ViewBag.Auditories = _context.SPR_AUDITORY
+                .Select(a => new SelectListItem
+                {
+                    Value = a.NOMER,
+                    Text = a.NOMER
+                }).ToList();
+
+            ViewBag.Buildings = _context.SPR_BUILDING
+                .Select(b => new SelectListItem
+                {
+                    Value = b.NAME,
+                    Text = b.NAME
+                }).ToList();
+
+            ViewBag.Prepodavatels = _context.SOTRUDNIK
+                .Select(p => new SelectListItem
+                {
+                    Value = p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME,
+                    Text = p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME,
+                }).ToList();
 
             return View();
         }
@@ -173,6 +208,7 @@ namespace SchedulerV4.Controllers
                 return View(schedule);
             }
         }
+
 
 
 
