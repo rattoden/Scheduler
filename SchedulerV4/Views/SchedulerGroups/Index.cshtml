@@ -11,8 +11,18 @@
         <tr>
             <th>Уникальный идентификатор группы</th>
             <th>Номер группы</th>
+            <th>Отделение</th>
+            <th>Код старосты</th>
             <th>Курс</th>
+            <th>Код учебного плана</th>
+            <th>Код рабочего учебного плана</th>
+            <th>Код факультета</th>
+            <th>Код образования</th>
+            <th>Сквозной код группы в справочнике</th>
+            <th>Учебный год группы</th>
+            <th>Статус группы</th>
             <th>Номер учебной специальности</th>
+            <th>Признак группы</th>
         </tr>
     </thead>
     <tbody>
@@ -20,9 +30,42 @@
         {
             <tr>
                 <td>@group.GROUPID</td>
-                <td>@group.GROUPNO</td> <!-- Исправлено с NANE на NAME -->
+                <td>@group.GROUPNO</td>
+                <td>@(group.OTDELCODE == 1 ? "очное" : (group.OTDELCODE == 2 ? "очно-заочное" : "заочное"))</td>
+                <td>@group.STAROSTA</td>
                 <td>@group.COURSE</td>
+                <td>@group.UCHPLANID</td>
+                <td>@group.RABUCHPLANID</td>
+                <td>@group.FACCODE</td>
+                <td>
+                    @(
+                        group.OBRCODE == 1 ? "Первое высшее" :
+                        group.OBRCODE == 2 ? "Второе высшее" :
+                        group.OBRCODE == 3 ? "СПО" :
+                        group.OBRCODE == 4 ? "Аспирантура" :
+                        group.OBRCODE == 5 ? "НПО" :
+                        "Доп. образование"
+                        )
+                </td>
+                <td>@group.KOD</td>
+                <td>@group.YEARF</td>
+                <td>
+                    @(
+                        group.STATE == 0 ? "неактивная" :
+                        group.STATE == 1 ? "активная" :
+                        "непереведенная"
+                        )
+                </td>
                 <td>@group.SPECNUM</td>
+                <td>
+                    @(
+                        group.GRINT == null ? "нет" :
+                        group.GRINT == 1 ? "группа ГРИНТ" :
+                        group.GRINT == 2 ? "группа КУИМЦ (слабослышащие)" :
+                        group.GRINT == 3 ? "группа Крылья Ростеха" :
+                        "группа КРИИ"
+                        )
+                </td>
                 <td>
                     <a asp-action="Edit" asp-route-id="@group.GROUPID" class="btn btn-primary">Изменить информацию о группе</a>
                     <form asp-action="Delete" method="post" style="display:inline;">
@@ -34,94 +77,98 @@
         }
     </tbody>
 </table>
-
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Успешно!</strong> @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Ошибка!</strong> @TempData["ErrorMessage"]
+    </div>
+}
 <h2>Добавление новой учебной группы</h2>
 <form asp-action="Create" method="post">
     <div class="form-group">
-        <label for="GROUPID">Уникальный идентификатор группы</label>
-        <input type="text" name="GROUPID" class="form-control" required />
-    </div>
-    <div class="form-group">
         <label for="GROUPNO">Номер группы</label>
-        <input type="text" name="GROUPNO" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <input type="number" name="GROUPNO" class="form-control" required min="0" max="99999"/>
     </div>
     <div class="form-group">
-        <label for="OTDELCODE">
-            Код отделения: 1 - очное, 2 -
-            очно-заочное, 3 -
-            заочное
-        </label>
-        <input type="text" name="OTDELCODE" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <label for="OTDELCODE">Код отделения</label>
+        <select name="OTDELCODE" class="form-control" required>
+            <option value="1">очное</option>
+            <option value="2">очное-заочное</option>
+            <option value="3">заочное</option>
+        </select>
     </div>
     <div class="form-group">
         <label for="STAROSTA">Уникальный идентификатор старосты</label>
-        <input type="text" name="STAROSTA" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <input type="number" name="STAROSTA" class="form-control" required />
     </div>
     <div class="form-group">
         <label for="COURSE">Номер курса обучения</label>
-        <input type="text" name="COURSE" class="form-control" required />
+        <select name="COURSE" class="form-control" required>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select>
     </div>
     <div class="form-group">
         <label for="UCHPLANID">Идентификатор учебного плана</label>
-        <input type="text" name="UCHPLANID" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <input type="number" name="UCHPLANID" class="form-control" required min="0" />
     </div>
     <div class="form-group">
-        <label for="RABUCHPLANID">
-            Идентификатор рабочего
-            учебного плана
-        </label>
-        <input type="text" name="RABUCHPLANID" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <label for="RABUCHPLANID">Идентификатор рабочего учебного плана</label>
+        <input type="number" name="RABUCHPLANID" class="form-control" required min="0" />
     </div>
     <div class="form-group">
         <label for="FACCODE">Код института(факультета)</label>
-        <input type="text" name="FACCODE" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <input type="number" name="FACCODE" class="form-control" required min="0" />
     </div>
     <div class="form-group">
-        <label for="OBRCODE">
-            Код образования(1 - Первое
-            высшее, 2 -
-            Второе высшее, 3
-            - СПО, 4 -
-            Аспирантура, 5 -
-            НПО, 6 - Доп.
-            образование)
-        </label>
-        <input type="text" name="OBRCODE" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <label for="OBRCODE">Код образования</label>
+        <select name="OBRCODE" class="form-control" required>
+            <option value="1">Первое высшее</option>
+            <option value="2">Второе высшее</option>
+            <option value="3">СПО</option>
+            <option value="4">Аспирантура</option>
+            <option value="5">НПО</option>
+            <option value="6">Доп. образование</option>
+        </select>
     </div><div class="form-group">
         <label for="KOD">Сквозной код группы в справочнике</label>
-        <input type="text" name="KOD" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <input type="number" name="KOD" class="form-control" required min="0" />
     </div>
     <div class="form-group">
-        <label for="YEARF">
-            Учебный год
-            группы
-        </label>
-        <input type="text" name="YEARF" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <label for="YEARF">Учебный год группы</label>
+        <input type="number" name="YEARF" class="form-control" required min="0" />
     </div>
     <div class="form-group">
-        <label for="STATE">
-            Статус группы(0 - неактивная, 1 -
-            активная, 2 -
-            непереведенная)
-        </label>
-        <input type="text" name="STATE" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <label for="STATE">Статус группы</label>
+        <select name="STATE" class="form-control" required>
+            <option value="0">неактивная</option>
+            <option value="1">активная</option>
+            <option value="2">непереведенная</option>
+        </select>
     </div>
     <div class="form-group">
         <label for="SPECNUM">Номер специальности(без пробелов и точек)</label>
-        <input type="text" name="SPECNUM" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <input type="number" name="SPECNUM" class="form-control" required min="0" />
     </div>
     <div class="form-group">
-        <label for="GRINT">
-            Признак группы(null - нет, 1 -
-            группа ГРИНТ, 2
-            - группа КУИМЦ
-            (слабослышащие),
-            3 - группа Крылья
-            Ростеха, 4 -
-            группа КРИИ)
-        </label>
-        <input type="text" name="GRINT" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+        <label for="GRINT">Признак группы</label>
+        <select name="GRINT" class="form-control" required>
+            <option value="null">нет</option>
+            <option value="1">группа ГРИНТ</option>
+            <option value="2">группа КУИМЦ (слабослышащие)</option>
+            <option value="3">группа Крылья Ростеха</option>
+            <option value="4">группа КРИИ</option>
+        </select>
     </div>
 
-    <button type="submit" class="btn btn-primary">Добавить группу</button>
+    <button type="submit" class="btn btn-primary" style="margin-top: 20px">Добавить группу</button>
 </form>

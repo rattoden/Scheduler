@@ -26,13 +26,29 @@ namespace SchedulerV4.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(GroupsEntity group)
         {
-            if (ModelState.IsValid)
+            int maxId = _context.GROUPS.Count() > 0 ? _context.GROUPS.Max(a => a.GROUPID) : 0;
+            group.GROUPID = maxId + 1;
+            if (Request.Form["GRINT"] == "null")
+                group.GRINT = null;
+
+            bool exists = _context.GROUPS.Count(g => g.GROUPNO == group.GROUPNO && g.YEARF == group.YEARF) > 0;
+            if (exists)
+            {
+                TempData["ErrorMessage"] = "Группа с таким номером и учебным годом уже существует.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
             {
                 _context.GROUPS.Add(group);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                TempData["SuccessMessage"] = "Группа успешно добавлена.";
             }
-            return View(group); // Вернуть форму снова для исправления ошибок ввода
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Произошла ошибка при добавлении группы: " + ex.Message;
+            }
+            return RedirectToAction(nameof(Index));
         }
 
 

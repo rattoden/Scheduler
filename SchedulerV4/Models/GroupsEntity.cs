@@ -20,7 +20,7 @@
         public int YEARF { get; set; }
         public int STATE { get; set; }
         public int SPECNUM { get; set; }
-        public int GRINT { get; set; }
+        public int? GRINT { get; set; }
 
     }
 }
