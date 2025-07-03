@@ -78,29 +78,46 @@ namespace SchedulerV4.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(GroupsEntity group)
         {
-            if (ModelState.IsValid)
+            try
             {
-                try
+                // Обработка nullable GRINT
+                var grintValue = Request.Form["GRINT"].ToString();
+                if (string.IsNullOrWhiteSpace(grintValue) || grintValue == "null")
+                    group.GRINT = null;
+                else if (int.TryParse(grintValue, out int parsedGrint))
+                    group.GRINT = parsedGrint;
+
+                // Проверка на дубликат GROUPNO + YEARF, исключая текущую группу
+                bool duplicateExists = await _context.GROUPS
+                    .CountAsync(g => g.GROUPID != group.GROUPID &&
+                                   g.GROUPNO == group.GROUPNO &&
+                                   g.YEARF == group.YEARF) > 0;
+
+                if (duplicateExists)
                 {
-                    var existingAuditory = await _context.GROUPS.FindAsync(group.GROUPID);
-                    if (existingAuditory != null)
-                    {
-                        _context.Entry(existingAuditory).CurrentValues.SetValues(group);
-                        await _context.SaveChangesAsync();
-                    }
-                    else
-                    {
-                        return NotFound();
-                    }
+                    TempData["ErrorMessage"] = "Группа с таким номером и учебным годом уже существует.";
                     return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
+
+                // Обновление записи
+                var existingGroup = await _context.GROUPS.FindAsync(group.GROUPID);
+                if (existingGroup == null)
                 {
-                    throw;
+                    TempData["ErrorMessage"] = "Группа не найдена.";
+                    return RedirectToAction(nameof(Index));
                 }
+
+                _context.Entry(existingGroup).CurrentValues.SetValues(group);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Информация о группе успешно обновлена.";
             }
-            // Возвращаем представление с моделью при наличии ошибок
-            return View(group);
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Ошибка при обновлении группы: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
 

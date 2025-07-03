@@ -4,78 +4,114 @@
     ViewData["Title"] = "Edit Group";
 }
 
-<h1>Edit Group</h1>
+<h1>Изменение группы номер @Model.GROUPID</h1>
 
 <form asp-action="Edit" method="post">
     <input type="hidden" asp-for="GROUPID" />
     <div class="form-group">
-        <label asp-for="GROUPNO">GROUPNO</label>
-        <input asp-for="GROUPNO" class="form-control" />
+        <label asp-for="GROUPNO">Номер группы</label>
+        <input asp-for="GROUPNO" class="form-control" required min="0"/>
         <span asp-validation-for="GROUPNO" class="text-danger"></span>
     </div>
 
     <div class="form-group">
-        <label asp-for="OTDELCODE">OTDELCODE</label>
-        <input asp-for="OTDELCODE" class="form-control" />
+        <label asp-for="OTDELCODE">Код отделения</label>
+        <select asp-for="OTDELCODE" class="form-control" required>
+            <option value="1">очное</option>
+            <option value="2">очное-заочное</option>
+            <option value="3">заочное</option>
+        </select>
         <span asp-validation-for="OTDELCODE" class="text-danger"></span>
     </div>
 
     <div class="form-group">
-        <label asp-for="STAROSTA">STAROSTA</label>
-        <input asp-for="STAROSTA" class="form-control" />
+        <label asp-for="STAROSTA">Уникальный идентификатор старосты</label>
+        <input asp-for="STAROSTA" class="form-control" required min="0" />
         <span asp-validation-for="STAROSTA" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="COURSE">COURSE</label>
-        <input asp-for="COURSE" class="form-control" />
+        <label asp-for="COURSE">Номер курса обучения</label>
+        <select asp-for="COURSE" class="form-control" required>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select>
         <span asp-validation-for="COURSE" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="UCHPLANID">UCHPLANID</label>
-        <input asp-for="UCHPLANID" class="form-control" />
+        <label asp-for="UCHPLANID">Идентификатор учебного плана</label>
+        <input asp-for="UCHPLANID" class="form-control" required min="0" />
         <span asp-validation-for="UCHPLANID" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="RABUCHPLANID">RABUCHPLANID</label>
-        <input asp-for="RABUCHPLANID" class="form-control" />
+        <label asp-for="RABUCHPLANID">Идентификатор рабочего учебного плана</label>
+        <input asp-for="RABUCHPLANID" class="form-control" required min="0" />
         <span asp-validation-for="RABUCHPLANID" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="FACCODE">FACCODE</label>
-        <input asp-for="FACCODE" class="form-control" />
+        <label asp-for="FACCODE">Код института (факультета)</label>
+        <input asp-for="FACCODE" class="form-control" required min="0" />
         <span asp-validation-for="FACCODE" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="OBRCODE">OBRCODE</label>
-        <input asp-for="OBRCODE" class="form-control" />
+        <label asp-for="OBRCODE">Код образования</label>
+        <select asp-for="OBRCODE" class="form-control" required>
+            <option value="1">Первое высшее</option>
+            <option value="2">Второе высшее</option>
+            <option value="3">СПО</option>
+            <option value="4">Аспирантура</option>
+            <option value="5">НПО</option>
+            <option value="6">Доп. образование</option>
+        </select>
         <span asp-validation-for="OBRCODE" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="KOD">KOD</label>
-        <input asp-for="KOD" class="form-control" />
+        <label asp-for="KOD">Сквозной код группы в справочнике</label>
+        <input asp-for="KOD" class="form-control" required min="0" />
         <span asp-validation-for="KOD" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="YEARF">YEARF</label>
-        <input asp-for="YEARF" class="form-control" />
+        <label asp-for="YEARF">Учебный год группы</label>
+        <input asp-for="YEARF" class="form-control" required min="0" />
         <span asp-validation-for="YEARF" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="STATE">STATE</label>
-        <input asp-for="STATE" class="form-control" />
+        <label asp-for="STATE">Статус группы</label>
+        <select asp-for="STATE" class="form-control" required>
+            <option value="0">неактивная</option>
+            <option value="1">активная</option>
+            <option value="2">непереведенная</option>
+        </select>
         <span asp-validation-for="STATE" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="SPECNUM">SPECNUM</label>
-        <input asp-for="SPECNUM" class="form-control" />
+        <label asp-for="SPECNUM">Номер специальности (без пробелов и точек)</label>
+        <input asp-for="SPECNUM" class="form-control" required min="0" />
         <span asp-validation-for="SPECNUM" class="text-danger"></span>
     </div>
+
     <div class="form-group">
-        <label asp-for="GRINT">GRINT</label>
-        <input asp-for="GRINT" class="form-control" />
+        <label asp-for="GRINT">Признак группы</label>
+        <select asp-for="GRINT" class="form-control" required>
+            <option value="null">нет</option>
+            <option value="1">группа ГРИНТ</option>
+            <option value="2">группа КУИМЦ (слабослышащие)</option>
+            <option value="3">группа Крылья Ростеха</option>
+            <option value="4">группа КРИИ</option>
+        </select>
         <span asp-validation-for="GRINT" class="text-danger"></span>
     </div>
-
 
     <button type="submit" class="btn btn-primary">Сохранить</button>
 </form>
