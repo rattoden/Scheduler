@@ -1,0 +1,37 @@
+﻿@model SchedulerV4.Models.UserEntity
+
+@{
+    ViewData["Title"] = "Create User";
+}
+
+<h1>Create User</h1>
+
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label asp-for="ID"></label>
+        <input asp-for="ID" class="form-control" />
+        <span asp-validation-for="ID" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="NAME"></label>
+        <input asp-for="NAME" class="form-control" />
+        <span asp-validation-for="NAME" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="EMAIL"></label>
+        <input asp-for="EMAIL" class="form-control" />
+        <span asp-validation-for="EMAIL" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="GROUP_ID">Group</label>
+        <input asp-for="GROUP_ID" class="form-control" />
+        <span asp-validation-for="GROUP_ID" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Add</button>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

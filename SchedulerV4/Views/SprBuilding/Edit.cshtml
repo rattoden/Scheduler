@@ -1,0 +1,28 @@
+﻿@model SchedulerV4.Models.SprBuildingEntity
+
+@{
+    ViewData["Title"] = "Edit Building";
+}
+
+<h1>Изменение здания номер @Model.ID_BUILDING</h1>
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="ID_BUILDING" />
+    <div class="form-group">
+        <label asp-for="ADDRESS">Адрес учебного здания</label>
+        <input asp-for="ADDRESS" type="text" class="form-control" required maxlength="100" />
+        <span asp-validation-for="ADDRESS" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TYPE">Тип</label>
+        <select asp-for="TYPE" class="form-control" asp-items="@(new List<SelectListItem>
+    {
+        new SelectListItem { Text = "-- Выберите тип --", Value = "" },
+        new SelectListItem { Text = "учебное", Value = "учебное" },
+        new SelectListItem { Text = "NULL", Value = "NULL" }
+    })">
+        </select>
+        <span asp-validation-for="TYPE" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top: 20px">Сохранить</button>
+</form>

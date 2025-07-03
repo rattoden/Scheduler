@@ -1,0 +1,107 @@
+﻿@model List<SchedulerV4.Models.SprAuditoryEntity>
+
+@{
+    ViewData["Title"] = "Auditory List";
+    var buildings = ViewBag.Buildings as List<SelectListItem>;
+}
+
+<h1>Список учебных аудиторий</h1>
+
+<table class="table" style="font-size: small">
+    <thead>
+        <tr>
+            <th>Уникальный идентификатор аудитории</th>
+            <th>Номер аудитории</th>
+            <th>Номер здания</th>
+            <th>Установленное ПО</th>
+            <th>Мультимедийная аудитория</th>
+            <th>Кафедра</th>
+            <th>Есть оборудование для слабослышащих</th>
+            <th>Оборудование</th>
+            <th>Количество мест</th>
+            <th>Количество ПК</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var auditory in Model)
+        {
+            <tr>
+                <td>@auditory.ID_AUDITORY</td>
+                <td>@auditory.NOMER</td>
+                <td>@auditory.ID_BUILDING</td>
+                <td>@auditory.SOFTWARE</td>
+                <td>@(auditory.MULTI_INVENTORY == 1 ? "Да" : "Нет")</td>
+                <td>@auditory.SIGNKAF</td>
+                <td>@auditory.INVALID</td>
+                <td>@auditory.EQUIPMENT</td>
+                <td>@auditory.KOLSEATS</td>
+                <td>@auditory.PC_COUNT</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@auditory.ID_AUDITORY" class="btn btn-primary">Изменить информацию</a>
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="ID" value="@auditory.ID_AUDITORY" />
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Успешно!</strong> @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Ошибка!</strong> @TempData["ErrorMessage"]
+    </div>
+}
+<h2>Добавить новую аудиторию</h2>
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label for="NOMER">Номер аудитории</label>
+        <input type="text" name="NOMER" class="form-control" required maxlength="4" />
+    </div>
+    <div class="form-group">
+        <label for="ID_BUILDING">Номер здания</label>
+        <select name="ID_BUILDING" class="form-control" required>
+            <option value="">-- Выберите здание --</option>
+            @foreach (var item in buildings)
+            {
+                <option value="@item.Value">@item.Text</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="SOFTWARE">Установленное ПО</label>
+        <input type="text" name="SOFTWARE" class="form-control" required maxlength="2500" />
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="MULTI_INVENTORY" value="1" id="MULTI_INVENTORY" />
+        <label class="form-check-label" for="MULTI_INVENTORY">Мультимедийная аудитория</label>
+    </div>
+    <div class="form-group">
+        <label for="SIGNKAF">Кафедра</label>
+        <input type="number" name="SIGNKAF" class="form-control" required min="0"/>
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="INVALID" value="Да" id="INVALID" />
+        <label class="form-check-label" for="INVALID">Есть оборудование для слабослышащих</label>
+    </div>
+    <div class="form-group">
+        <label for="EQUIPMENT">Оборудование</label>
+        <input type="text" name="EQUIPMENT" class="form-control" required maxlength="2500" />
+    </div>
+    <div class="form-group">
+        <label for="KOLSEATS">Количество мест</label>
+        <input type="number" name="KOLSEATS" class="form-control" required min="0"/>
+    </div><div class="form-group">
+        <label for="PC_COUNT">Количество ПК</label>
+        <input type="number" name="PC_COUNT" class="form-control" required min="0"/>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top: 20px">Добавить</button>
+</form>

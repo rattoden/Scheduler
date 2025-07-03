@@ -1,0 +1,69 @@
+﻿@model List<SchedulerV4.Models.SprBuildingEntity>
+
+@{
+    ViewData["Title"] = "Buildings List";
+}
+
+<h1>Список учебных зданий</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Уникальный идентификатор здания</th>
+            <th>Номер учебного здания</th>
+            <th>Адрес учебного здания</th>
+            <th>Тип</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var building in Model)
+        {
+            <tr>
+                <td>@building.ID_BUILDING</td>
+                <td>@building.NAME</td>
+                <td>@building.ADDRESS</td>
+                <td>@building.TYPE</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@building.ID_BUILDING" class="btn btn-primary">Изменить информацию</a>
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="ID" value="@building.ID_BUILDING" />
+                        <button type="submit" class="btn btn-danger">Удалить здание</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Успешно!</strong> @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Ошибка!</strong> @TempData["ErrorMessage"]
+    </div>
+}
+<h2>Добавить новое учебное здание</h2>
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label for="ID">Номер учебного здания</label>
+        <input type="number" name="ID_BUILDING" class="form-control" required min="0" max="999" />
+    </div>
+    <div class="form-group">
+        <label for="Name">Адрес учебного здания</label>
+        <input type="text" name="ADDRESS" class="form-control" required maxlength="100" />
+    </div>
+    <div class="form-group">
+        <label for="Name">Тип</label>
+        <select name="TYPE" class="form-control" required>
+            <option value="">-- Выберите тип --</option>
+            <option value="учебное">учебное</option>
+            <option value="NULL">NULL</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top: 20px">Добавить</button>
+</form>

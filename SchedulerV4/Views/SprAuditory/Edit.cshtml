@@ -1,0 +1,61 @@
+﻿@model SchedulerV4.Models.SprAuditoryEntity
+
+@{
+    ViewData["Title"] = "Edit Auditory";
+    var buildings = ViewBag.Buildings as List<SelectListItem>;
+}
+
+<h1>Изменение аудитории номер @Model.ID_AUDITORY</h1>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="ID_AUDITORY" />
+    <div class="form-group">
+        <label asp-for="NOMER">Номер аудитории</label>
+        <input asp-for="NOMER" class="form-control" required maxlength="4" />
+        <span asp-validation-for="NOMER" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="ID_BUILDING">Номер здания</label>
+        <select asp-for="ID_BUILDING" class="form-control" asp-items="ViewBag.Buildings">
+            <option value="">-- Выберите здание --</option>
+        </select>
+        <span asp-validation-for="ID_BUILDING" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="SOFTWARE">Установленное ПО</label>
+        <input asp-for="SOFTWARE" class="form-control" required maxlength="2500" />
+        <span asp-validation-for="SOFTWARE" class="text-danger"></span>
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="MULTI_INVENTORY" value="1" @(Model.MULTI_INVENTORY == 1 ? "checked" : "") />
+        <label class="form-check-label" for="MULTI_INVENTORY">Мультимедийная аудитория</label>
+    </div>
+    <div class="form-group">
+        <label asp-for="SIGNKAF">Кафедра</label>
+        <input asp-for="SIGNKAF" class="form-control" required min="0" />
+        <span asp-validation-for="SIGNKAF" class="text-danger"></span>
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="INVALID" value="1" @(Model.INVALID == "Да" ? "checked" : "") />
+        <label class="form-check-label" for="INVALID">Есть оборудование для слабослышащих</label>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="EQUIPMENT">Оборудование</label>
+        <input asp-for="EQUIPMENT" class="form-control" required maxlength="2500" />
+        <span asp-validation-for="EQUIPMENT" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="KOLSEATS">Количество мест</label>
+        <input asp-for="KOLSEATS" class="form-control" required min="0" />
+        <span asp-validation-for="KOLSEATS" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="PC_COUNT">Количество ПК</label>
+        <input asp-for="PC_COUNT" class="form-control" required min="0" />
+        <span asp-validation-for="PC_COUNT" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top: 20px">Сохранить</button>
+</form>

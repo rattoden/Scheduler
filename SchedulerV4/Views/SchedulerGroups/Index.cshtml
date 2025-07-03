@@ -1,0 +1,127 @@
+﻿@model List<SchedulerV4.Models.GroupsEntity>
+
+@{
+    ViewData["Title"] = "Groups List";
+}
+
+<h1>Список учебных групп</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Уникальный идентификатор группы</th>
+            <th>Номер группы</th>
+            <th>Курс</th>
+            <th>Номер учебной специальности</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var group in Model)
+        {
+            <tr>
+                <td>@group.GROUPID</td>
+                <td>@group.GROUPNO</td> <!-- Исправлено с NANE на NAME -->
+                <td>@group.COURSE</td>
+                <td>@group.SPECNUM</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@group.GROUPID" class="btn btn-primary">Изменить информацию о группе</a>
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="ID" value="@group.GROUPID" />
+                        <button type="submit" class="btn btn-danger">Удалить группу</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>Добавление новой учебной группы</h2>
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label for="GROUPID">Уникальный идентификатор группы</label>
+        <input type="text" name="GROUPID" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="GROUPNO">Номер группы</label>
+        <input type="text" name="GROUPNO" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="OTDELCODE">
+            Код отделения: 1 - очное, 2 -
+            очно-заочное, 3 -
+            заочное
+        </label>
+        <input type="text" name="OTDELCODE" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="STAROSTA">Уникальный идентификатор старосты</label>
+        <input type="text" name="STAROSTA" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="COURSE">Номер курса обучения</label>
+        <input type="text" name="COURSE" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="UCHPLANID">Идентификатор учебного плана</label>
+        <input type="text" name="UCHPLANID" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="RABUCHPLANID">
+            Идентификатор рабочего
+            учебного плана
+        </label>
+        <input type="text" name="RABUCHPLANID" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="FACCODE">Код института(факультета)</label>
+        <input type="text" name="FACCODE" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="OBRCODE">
+            Код образования(1 - Первое
+            высшее, 2 -
+            Второе высшее, 3
+            - СПО, 4 -
+            Аспирантура, 5 -
+            НПО, 6 - Доп.
+            образование)
+        </label>
+        <input type="text" name="OBRCODE" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div><div class="form-group">
+        <label for="KOD">Сквозной код группы в справочнике</label>
+        <input type="text" name="KOD" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="YEARF">
+            Учебный год
+            группы
+        </label>
+        <input type="text" name="YEARF" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="STATE">
+            Статус группы(0 - неактивная, 1 -
+            активная, 2 -
+            непереведенная)
+        </label>
+        <input type="text" name="STATE" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="SPECNUM">Номер специальности(без пробелов и точек)</label>
+        <input type="text" name="SPECNUM" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+    <div class="form-group">
+        <label for="GRINT">
+            Признак группы(null - нет, 1 -
+            группа ГРИНТ, 2
+            - группа КУИМЦ
+            (слабослышащие),
+            3 - группа Крылья
+            Ростеха, 4 -
+            группа КРИИ)
+        </label>
+        <input type="text" name="GRINT" class="form-control" required /> <!-- Исправлено с NANE на NAME -->
+    </div>
+
+    <button type="submit" class="btn btn-primary">Добавить группу</button>
+</form>

@@ -1,0 +1,23 @@
+﻿@model SchedulerV4.Models.UserEntity
+
+@{
+    ViewData["Title"] = "Edit User";
+}
+
+<h1>Edit User</h1>
+
+<form asp-action="Edit">
+    <div class="form-group">
+        <label for="ID">ID</label>
+        <input type="text" id="ID" name="ID" class="form-control" value="@Model.ID" readonly />
+    </div>
+    <div class="form-group">
+        <label for="NAME">Name</label>
+        <input type="text" id="NAME" name="NAME" class="form-control" value="@Model.NAME" required />
+    </div>
+    <div class="form-group">
+        <label for="EMAIL">Email</label>
+        <input type="email" id="EMAIL" name="EMAIL" class="form-control" value="@Model.EMAIL" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>

@@ -1,0 +1,71 @@
+﻿@model List<SchedulerV4.Models.ScheduleNPublEntity>
+
+@{
+    ViewData["Title"] = "Schedule List";
+}
+
+<h1>Расписание занятий</h1>
+
+<!-- Форма для выбора группы -->
+<form method="get" asp-action="Index">
+    <div class="form-group">
+        <label for="groupSelect">Выберите группу:</label>
+        <select id="groupSelect" name="selectedGroup" class="form-control" onchange="this.form.submit()">
+            <option value="">-- Все группы --</option>
+            @foreach (var group in ViewBag.Groups as List<SelectListItem>)
+            {
+                <option value="@group.Value" selected="@(group.Value == (ViewBag.SelectedGroup?.ToString() ?? "") ? "selected" : null)">
+                    @group.Text
+                </option>
+
+            }
+        </select>
+    </div>
+</form>
+
+<!-- Таблица расписания -->
+@if (!Model.Any())
+{
+    <p>Для выбранной группы расписание отсутствует.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Время</th>
+                <th>День недели</th>
+                <th>Номер дисциплины</th>
+                <th>Вид занятия</th>
+                <th>Номер аудитории</th>
+                <th>Номер здания</th>
+                <th>Преподаватель</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var scheduler in Model)
+            {
+                <tr>
+                    <td>@scheduler.VREM</td>
+                    <td>@scheduler.DEN</td>
+                    <td>@(scheduler.Discipline?.NAME ?? "Не указано")</td> <!-- Название дисциплины -->
+                    <td>@scheduler.FORM_ZAN</td>
+                    <td>@scheduler.AUDITORIYA</td>
+                    <td>@scheduler.ZDANIE</td>
+                    <td>@scheduler.PREPODAVATEL</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@scheduler.LESSON_ID" class="btn btn-primary">Изменить</a>
+                        <form asp-action="DeleteConfirmed" method="post" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@scheduler.LESSON_ID" />
+                            <button type="submit" class="btn btn-danger">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<a asp-action="Create" class="btn btn-success">Добавить новое занятие</a>

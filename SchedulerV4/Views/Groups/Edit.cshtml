@@ -1,0 +1,17 @@
+﻿@model SchedulerV4.Models.GroupEntity
+
+@{
+    ViewData["Title"] = "Изменение информации о группе";
+}
+
+<h1>Изменение информации о группе</h1>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="ID" />
+    <div class="form-group">
+        <label asp-for="NANE">Номер группы</label>
+        <input asp-for="NANE" class="form-control" />
+        <span asp-validation-for="NANE" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+</form>

@@ -1,0 +1,102 @@
+﻿@model SchedulerV4.Models.ScheduleNPublEntity
+
+@{
+    ViewData["Title"] = "Создание расписания";
+}
+
+<h2>Создание расписания</h2>
+
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label asp-for="GROUPID">Номер группы</label>
+        <select asp-for="GROUPID" class="form-control" asp-items="ViewBag.Groups" id="GroupSelect">
+            <option value="">Выберите группу</option>
+        </select>
+        <span asp-validation-for="GROUPID" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="DEN">День недели</label>
+        <select asp-for="DEN" class="form-control" asp-items="ViewBag.DaysOfWeek" id="DayOfWeekSelect">
+            <option value="">Выберите день</option>
+        </select>
+        <span asp-validation-for="DEN" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="VREM">Время</label>
+        <select asp-for="VREM" class="form-control" asp-items="ViewBag.Times" id="TimeSelect">
+            <option value="">Выберите время</option>
+        </select>
+        <span asp-validation-for="VREM" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="FORM_ZAN">Форма занятия</label>
+        <select asp-for="FORM_ZAN" class="form-control" asp-items="ViewBag.FormZanOptions">
+            <option value="">Выберите форму</option>
+        </select>
+        <span asp-validation-for="FORM_ZAN" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="DATA">Чет/нечет</label>
+        <select asp-for="DATA" class="form-control" asp-items="ViewBag.DataOptions">
+            <option value="">Выберите</option>
+        </select>
+        <span asp-validation-for="DATA" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ZDANIE">Здание</label>
+        <select asp-for="ZDANIE" class="form-control" asp-items="ViewBag.Buildings">
+            <option value="">Выберите здание</option>
+        </select>
+        <span asp-validation-for="ZDANIE" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <input type="submit" value="Создать" class="btn btn-primary" />
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        // Функция для обновления доступных временных слотов
+        function updateAvailableTimeSlots() {
+            var groupId = $("#GroupSelect").val();
+            var dayOfWeek = $("#DayOfWeekSelect").val();
+
+
+            if (groupId && dayOfWeek) {
+                $.ajax({
+                    url: '@Url.Action("GetAvailableTimeSlots", "SchedulerNPubl")',
+                    data: {
+                        groupId: groupId,
+                        dayOfWeek: dayOfWeek
+                    },
+                    type: 'GET',
+                    success: function (data) {
+                        var timeSelect = $('#TimeSelect');
+                        timeSelect.empty(); // Очистить текущие значения
+                        timeSelect.append('<option value="">Выберите время</option>'); // Добавить placeholder
+                        console.log(data, groupId, dayOfWeek);
+                        // Заполняем доступными временами
+                        $.each(data, function (index, item) {
+                            console.log("EACH",index, item);
+                            timeSelect.append('<option value="' + item.value + '">' + item.text + '</option>');
+                        });
+                    },
+                    error: function () {
+                        alert("Ошибка при загрузке временных слотов.");
+                    }
+                });
+            }
+        }
+
+        // Событие при изменении группы или дня недели
+        $("#GroupSelect, #DayOfWeekSelect").change(function () {
+            updateAvailableTimeSlots();
+        });
+    </script>
+}

@@ -1,0 +1,169 @@
+﻿@* @model SchedulerV4.Models.ScheduleNPublEntity
+
+@{
+    ViewData["Title"] = "Edit Schedule";
+}
+
+<h1>Edit Schedule</h1>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="LESSON_ID" />
+    <div class="form-group">
+        <label asp-for="GROUPNO">GROUPNO</label>
+        <input asp-for="GROUPNO" class="form-control" />
+        <span asp-validation-for="GROUPNO" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="GROUPID">GROUPID</label>
+        <input asp-for="GROUPID" class="form-control" />
+        <span asp-validation-for="GROUPID" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="DEN">DEN</label>
+        <input asp-for="DEN" class="form-control" />
+        <span asp-validation-for="DEN" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="VREM">VREM</label>
+        <input asp-for="VREM" class="form-control" />
+        <span asp-validation-for="VREM" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DATA">DATA</label>
+        <input asp-for="DATA" class="form-control" />
+        <span asp-validation-for="DATA" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DISCIPL_NUM">DISCIPL_NUM</label>
+        <input asp-for="DISCIPL_NUM" class="form-control" />
+        <span asp-validation-for="DISCIPL_NUM" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="FORM_ZAN">FORM_ZAN</label>
+        <input asp-for="FORM_ZAN" class="form-control" />
+        <span asp-validation-for="FORM_ZAN" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="AUDITORIYA">AUDITORIYA</label>
+        <input asp-for="AUDITORIYA" class="form-control" />
+        <span asp-validation-for="AUDITORIYA" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="ZDANIE">ZDANIE</label>
+        <input asp-for="ZDANIE" class="form-control" />
+        <span asp-validation-for="ZDANIE" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DOLZNOST">DOLZNOST</label>
+        <input asp-for="DOLZNOST" class="form-control" />
+        <span asp-validation-for="DOLZNOST" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="PREPODAVATEL">PREPODAVATEL</label>
+        <input asp-for="PREPODAVATEL" class="form-control" />
+        <span asp-validation-for="PREPODAVATEL" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TABNUM">TABNUM</label>
+        <input asp-for="TABNUM" class="form-control" />
+        <span asp-validation-for="TABNUM" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="YEARF">YEARF</label>
+        <input asp-for="YEARF" class="form-control" />
+        <span asp-validation-for="YEARF" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="SEMESTR">SEMESTR</label>
+        <input asp-for="SEMESTR" class="form-control" />
+        <span asp-validation-for="SEMESTR" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TIP">TIP</label>
+        <input asp-for="TIP" class="form-control" />
+        <span asp-validation-for="TIP" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DEN_POS">DEN_POS</label>
+        <input asp-for="DEN_POS" class="form-control" />
+        <span asp-validation-for="DEN_POS" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="TIME_POS">TIME_POS</label>
+        <input asp-for="TIME_POS" class="form-control" />
+        <span asp-validation-for="TIME_POS" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="BUILDING_ID">BUILDING_ID</label>
+        <input asp-for="BUILDING_ID" class="form-control" />
+        <span asp-validation-for="BUILDING_ID" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="AUDITORY_ID">AUDITORY_ID</label>
+        <input asp-for="AUDITORY_ID" class="form-control" />
+        <span asp-validation-for="AUDITORY_ID" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="NUM_DISCIPL_GUIDE">NUM_DISCIPL_GUIDE</label>
+        <input asp-for="NUM_DISCIPL_GUIDE" class="form-control" />
+        <span asp-validation-for="NUM_DISCIPL_GUIDE" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="PREPOD_ID">PREPOD_ID</label>
+        <input asp-for="PREPOD_ID" class="form-control" />
+        <span asp-validation-for="PREPOD_ID" class="text-danger"></span>
+    </div>
+
+
+
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>
+ *@
+
+
+        @model SchedulerV4.Models.ScheduleNPublEntity
+
+@{
+    ViewData["Title"] = "Edit Schedule";
+}
+
+<h1>Edit Schedule</h1>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="LESSON_ID" />
+
+    <div class="form-group">
+        <label asp-for="GROUPNO"></label>
+        <input asp-for="GROUPNO" class="form-control" />
+        <span asp-validation-for="GROUPNO" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="GROUPID"></label>
+        <input asp-for="GROUPID" class="form-control" />
+        <span asp-validation-for="GROUPID" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="DEN"></label>
+        <input asp-for="DEN" class="form-control" />
+        <span asp-validation-for="DEN" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="VREM"></label>
+        <input asp-for="VREM" class="form-control" />
+        <span asp-validation-for="VREM" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="DATA"></label>
+        <input asp-for="DATA" class="form-control" type="date" />
+        <span asp-validation-for="DATA" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>

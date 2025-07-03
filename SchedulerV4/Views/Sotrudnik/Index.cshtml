@@ -1,0 +1,122 @@
+﻿@model List<SchedulerV4.Models.SotrudnikEntity>
+
+@{
+    ViewData["Title"] = "Список преподавателей";
+}
+
+<h1>Список преподавателей</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Уникальный номер преподавателя</th>
+            <th>Фамилия</th>
+            <th>Имя</th>
+            <th>Отчество</th>
+            <th>Табельный номер</th>
+            <th>Пол</th>
+            <th>Дата рождения</th>
+            <th>Окончил ВУЗ</th>
+            <th>Ранг</th>
+            <th>Уч. степень</th>
+            <th>Наука</th>
+            <th>Является деканом</th>
+            <th>Кафедра</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var sotrudnik in Model)
+        {
+            <tr>
+                <td>@sotrudnik.ID_SOTR</td>
+                <td>@sotrudnik.FIRSTNAME</td>
+                <td>@sotrudnik.MIDDLENAME</td>
+                <td>@sotrudnik.LASTNAME</td>
+                <td>@sotrudnik.TAB_NO</td>
+                <td>@sotrudnik.SEX</td>
+                <td>@sotrudnik.BIRTHDAY.ToString("dd.MM.yyyy")</td>
+                <td>@sotrudnik.VUZ</td>
+                <td>@sotrudnik.RANG</td>
+                <td>@sotrudnik.DEGREE</td>
+                <td>@sotrudnik.SCIENCE</td>
+                <td>@sotrudnik.DEKAN</td>
+                <td>@sotrudnik.CAF_ID</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@sotrudnik.ID_SOTR" class="btn btn-primary">Изменить информацию</a>
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="ID" value="@sotrudnik.ID_SOTR" />
+                        <button type="submit" class="btn btn-danger">Удалить здание</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Успешно!</strong> @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Ошибка!</strong> @TempData["ErrorMessage"]
+    </div>
+}
+<h2>Добавление нового сотрудника</h2>
+<form asp-action="Create" method="post">
+    <div class="form-group">
+        <label for="FIRSTNAME">Имя</label>
+        <input type="text" name="FIRSTNAME" class="form-control" required maxlength="30" />
+    </div>
+    <div class="form-group">
+        <label for="MIDDLENAME">Отчество</label>
+        <input type="text" name="MIDDLENAME" class="form-control" required maxlength="20" />
+    </div>
+    <div class="form-group">
+        <label for="LASTNAME">Фамилия</label>
+        <input type="text" name="LASTNAME" class="form-control" required maxlength="30" />
+    </div>
+    <div class="form-group">
+        <label for="TAB_NO">Табельный номер</label>
+        <input type="text" name="TAB_NO" class="form-control" required maxlength="10" />
+    </div>
+    <div class="form-group">
+        <label for="SEX">Пол</label>
+        <select name="SEX" class="form-control" required>
+            <option value="">-- Выберите тип --</option>
+            <option value="М">М</option>
+            <option value="Ж">Ж</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="BIRTHDAY">День рождения</label>
+        <input type="date" name="BIRTHDAY" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label for="VUZ">Оконченный вуз</label>
+        <input type="text" name="VUZ" class="form-control" required maxlength="15" />
+    </div>
+    <div class="form-group">
+        <label for="RANG">Ранг</label>
+        <input type="text" name="RANG" class="form-control" required maxlength="10" />
+    </div><div class="form-group">
+        <label for="DEGREE">Уч. степень</label>
+        <input type="text" name="DEGREE" class="form-control" required maxlength="1" />
+    </div>
+    <div class="form-group">
+        <label for="SCIENCE">Наука</label>
+        <input type="text" name="SCIENCE" class="form-control" required maxlength="10" />
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" name="DEKAN" value="Д" id="DEKAN" />
+        <label class="form-check-label" for="DEKAN">Является деканом</label>
+    </div>
+    <div class="form-group">
+        <label for="CAF_ID">Уникальный идентификатор кафедры</label>
+        <input type="number" name="CAF_ID" class="form-control" required /> 
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top: 20px">Добавить</button>
+</form>

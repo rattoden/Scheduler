@@ -1,0 +1,81 @@
+﻿@model SchedulerV4.Models.GroupsEntity
+
+@{
+    ViewData["Title"] = "Edit Group";
+}
+
+<h1>Edit Group</h1>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="GROUPID" />
+    <div class="form-group">
+        <label asp-for="GROUPNO">GROUPNO</label>
+        <input asp-for="GROUPNO" class="form-control" />
+        <span asp-validation-for="GROUPNO" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="OTDELCODE">OTDELCODE</label>
+        <input asp-for="OTDELCODE" class="form-control" />
+        <span asp-validation-for="OTDELCODE" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="STAROSTA">STAROSTA</label>
+        <input asp-for="STAROSTA" class="form-control" />
+        <span asp-validation-for="STAROSTA" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="COURSE">COURSE</label>
+        <input asp-for="COURSE" class="form-control" />
+        <span asp-validation-for="COURSE" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="UCHPLANID">UCHPLANID</label>
+        <input asp-for="UCHPLANID" class="form-control" />
+        <span asp-validation-for="UCHPLANID" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="RABUCHPLANID">RABUCHPLANID</label>
+        <input asp-for="RABUCHPLANID" class="form-control" />
+        <span asp-validation-for="RABUCHPLANID" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="FACCODE">FACCODE</label>
+        <input asp-for="FACCODE" class="form-control" />
+        <span asp-validation-for="FACCODE" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="OBRCODE">OBRCODE</label>
+        <input asp-for="OBRCODE" class="form-control" />
+        <span asp-validation-for="OBRCODE" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="KOD">KOD</label>
+        <input asp-for="KOD" class="form-control" />
+        <span asp-validation-for="KOD" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="YEARF">YEARF</label>
+        <input asp-for="YEARF" class="form-control" />
+        <span asp-validation-for="YEARF" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="STATE">STATE</label>
+        <input asp-for="STATE" class="form-control" />
+        <span asp-validation-for="STATE" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="SPECNUM">SPECNUM</label>
+        <input asp-for="SPECNUM" class="form-control" />
+        <span asp-validation-for="SPECNUM" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="GRINT">GRINT</label>
+        <input asp-for="GRINT" class="form-control" />
+        <span asp-validation-for="GRINT" class="text-danger"></span>
+    </div>
+
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+</form>
