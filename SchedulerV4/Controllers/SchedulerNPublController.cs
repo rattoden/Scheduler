@@ -146,198 +146,192 @@ namespace SchedulerV4.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ScheduleNPublEntity schedule)
         {
-            if (!ModelState.IsValid)
-            {
-                // Перезаполнение данных для формы в случае ошибки
-                ViewBag.Groups = _context.GROUPS
-                    .Select(g => new SelectListItem
-                    {
-                        Value = g.GROUPID.ToString(),
-                        Text = g.GROUPNO.ToString()
-                    })
-                    .ToList();
+            // Генерация нового ID
+            int maxId = _context.SHEDULE_N_PUBL.Count() > 0 ? _context.SHEDULE_N_PUBL.Max(s => s.LESSON_ID) : 0;
+            schedule.LESSON_ID = maxId + 1;
+            // Заполнение GROUPNO по GROUPID
+            var group = _context.GROUPS.FirstOrDefault(g => g.GROUPID == schedule.GROUPID);
+            schedule.GROUPNO = group?.GROUPNO ?? 0;
 
-                ViewBag.DaysOfWeek = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "ПОНЕДЕЛЬНИК", Text = "ПОНЕДЕЛЬНИК" },
-            new SelectListItem { Value = "ВТОРНИК", Text = "ВТОРНИК" },
-            new SelectListItem { Value = "СРЕДА", Text = "СРЕДА" },
-            new SelectListItem { Value = "ЧЕТВЕРГ", Text = "ЧЕТВЕРГ" },
-            new SelectListItem { Value = "ПЯТНИЦА", Text = "ПЯТНИЦА" },
-            new SelectListItem { Value = "СУББОТА", Text = "СУББОТА" }
-        };
-                ViewBag.Times = GetAllTimeSlots();
+            // Получение ID аудитории и здания, если необходимо по имени
+            var aud = _context.SPR_AUDITORY.FirstOrDefault(a => a.NOMER == schedule.AUDITORIYA);
+            var zdan = _context.SPR_BUILDING.FirstOrDefault(z => z.NAME == schedule.ZDANIE);
+            schedule.AUDITORY_ID = aud?.ID_AUDITORY ?? 0;
+            schedule.BUILDING_ID = zdan?.ID_BUILDING ?? 0;
 
-                ViewBag.DataOptions = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "NULL", Text = "NULL" },
-            new SelectListItem { Value = "Чет", Text = "Чет" },
-            new SelectListItem { Value = "Неч", Text = "Неч" }
-        };
+            // Получение ID преподавателя, если возможно
+            var prepod = _context.SOTRUDNIK
+                .FirstOrDefault(p => (p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME) == schedule.PREPODAVATEL);
+            schedule.PREPOD_ID = prepod?.ID_SOTR ?? 0;
+            schedule.TABNUM = prepod?.TAB_NO ?? "NULL";
+            schedule.DOLZNOST = prepod?.RANG ?? "NULL";
 
-                ViewBag.FormZanOptions = new List<SelectListItem>
-        {
-            new SelectListItem { Value = "Лек.", Text = "Лек." },
-            new SelectListItem { Value = "Прак.", Text = "Прак." },
-            new SelectListItem { Value = "Л.р.", Text = "Л.р." }
-        };
+            // Обработка позиций (можно улучшить при необходимости)
+            schedule.DEN_POS = GetDayPosition(schedule.DEN); // Понедельник=1, вторник=2 и т.д.
+            schedule.TIME_POS = GetTimePosition(schedule.VREM); // 08:00=1, 09:40=2 и т.д.
 
-                // Опции для ZDANIE
-                var buildings = _context.SPR_BUILDING
-                    .Select(b => new SelectListItem
-                    {
-                        Value = b.ID_BUILDING.ToString(),
-                        Text = b.NAME
-                    })
-                    .ToList();
-
-                ViewBag.Buildings = buildings;
-
-                return View(schedule);
-            }
+            // Значения по умолчанию для GUIDE
+            schedule.NUM_DISCIPL_GUIDE = 1;
 
             try
             {
                 _context.SHEDULE_N_PUBL.Add(schedule);
                 await _context.SaveChangesAsync();
+                TempData["SuccessMessage"] = "Занятие добавлено в расписание.";
                 return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", "Произошла ошибка при добавлении расписания.");
+                ModelState.AddModelError("", $"Ошибка при добавлении записи: {ex.Message}");
                 return View(schedule);
             }
         }
 
-
-
-
-
-
-
-
-        /// GET: Method to filter available times based on the selected group and day of the week
-        public IActionResult GetAvailableTimeSlots(int groupId, string dayOfWeek)
+        // Вспомогательные методы
+        private int GetDayPosition(string day)
         {
-            try
+            return day switch
             {
-                Console.WriteLine($"Group ID: {groupId}, Day of Week: {dayOfWeek}");
-
-                // Получаем занятые временные слоты для указанной группы и дня недели
-                var occupiedTimes = _context.SHEDULE_N_PUBL
-                    .Where(s => s.GROUPID == groupId && s.DEN.Trim().ToUpper() == dayOfWeek.Trim().ToUpper())
-                    .Select(s => s.VREM.Trim())
-                    .ToList();
-
-                if (occupiedTimes.Any())
-                {
-                    Console.WriteLine($"Occupied time slots: {string.Join(", ", occupiedTimes)}");
-                }
-                else
-                {
-                    Console.WriteLine("No occupied time slots found for this group and day.");
-                }
-
-                // Получаем все возможные временные слоты
-                var allTimeSlots = GetAllTimeSlots();
-
-                // Фильтруем свободные временные слоты
-                var availableTimeSlots = allTimeSlots
-                    .Where(t => !occupiedTimes.Contains(t.Value.Trim()))
-                    .Select(t => new { t.Value, t.Text })  // Отправляем Value и Text
-                    .ToList();
-
-                if (availableTimeSlots.Any())
-                {
-                    Console.WriteLine($"Available time slots: {string.Join(", ", availableTimeSlots.Select(t => t.Value))}");
-                }
-                else
-                {
-                    Console.WriteLine("No available time slots.");
-                }
-
-                return Json(availableTimeSlots);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-                return StatusCode(500, new { error = "An error occurred while fetching available time slots." });
-            }
+                "пн" => 1,
+                "вт" => 2,
+                "ср" => 3,
+                "чт" => 4,
+                "пт" => 5,
+                "сб" => 6,
+                _ => 0
+            };
         }
 
+        private int GetTimePosition(string time)
+        {
+            var order = new List<string> { "08:00", "09:40", "11:20", "13:30", "15:10", "16:50", "18:30" };
+            return order.IndexOf(time) + 1;
+        }
 
-
-
-        // GET: Edit
-        public async Task<IActionResult> Edit(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             var schedule = await _context.SHEDULE_N_PUBL.FindAsync(id);
-            if (schedule == null)
+            if (schedule != null)
             {
-                return NotFound();
+                _context.SHEDULE_N_PUBL.Remove(schedule);
+                await _context.SaveChangesAsync();
             }
-            return View(schedule);
-        }
-
-        // POST: Edit
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ScheduleNPublEntity schedule)
-        {
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    var existingSchedule = await _context.SHEDULE_N_PUBL.FindAsync(schedule.LESSON_ID);
-                    if (existingSchedule != null)
-                    {
-                        _context.Entry(existingSchedule).CurrentValues.SetValues(schedule);
-                        await _context.SaveChangesAsync();
-                        return RedirectToAction(nameof(Index));
-                    }
-                    else
-                    {
-                        return NotFound();
-                    }
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    throw;
-                }
-            }
-            return View(schedule);
-        }
-
-        // POST: DeleteConfirmed
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var lesson = await _context.SHEDULE_N_PUBL.FindAsync(id);
-            if (lesson == null)
-            {
-                return NotFound();
-            }
-            _context.SHEDULE_N_PUBL.Remove(lesson);
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        // Метод для получения всех возможных временных интервалов
-        private List<SelectListItem> GetAllTimeSlots()
-        {
-            return new List<SelectListItem>
-            {
-                new SelectListItem { Value = "08:00", Text = "08:00" },
-                new SelectListItem { Value = "09:40", Text = "09:40" },
-                new SelectListItem { Value = "11:20", Text = "11:20" },
-                new SelectListItem { Value = "13:30", Text = "13:30" },
-                new SelectListItem { Value = "15:10", Text = "15:10" },
-                new SelectListItem { Value = "16:50", Text = "16:50" },
-                new SelectListItem { Value = "18:20", Text = "18:20" },
-                new SelectListItem { Value = "20:00", Text = "20:00" }
-            };
-        }
+
+
+
+
+
+
+        ///// GET: Method to filter available times based on the selected group and day of the week
+        //public IActionResult GetAvailableTimeSlots(int groupId, string dayOfWeek)
+        //{
+        //    try
+        //    {
+        //        Console.WriteLine($"Group ID: {groupId}, Day of Week: {dayOfWeek}");
+
+        //        // Получаем занятые временные слоты для указанной группы и дня недели
+        //        var occupiedTimes = _context.SHEDULE_N_PUBL
+        //            .Where(s => s.GROUPID == groupId && s.DEN.Trim().ToUpper() == dayOfWeek.Trim().ToUpper())
+        //            .Select(s => s.VREM.Trim())
+        //            .ToList();
+
+        //        if (occupiedTimes.Any())
+        //        {
+        //            Console.WriteLine($"Occupied time slots: {string.Join(", ", occupiedTimes)}");
+        //        }
+        //        else
+        //        {
+        //            Console.WriteLine("No occupied time slots found for this group and day.");
+        //        }
+
+        //        // Получаем все возможные временные слоты
+        //        var allTimeSlots = GetAllTimeSlots();
+
+        //        // Фильтруем свободные временные слоты
+        //        var availableTimeSlots = allTimeSlots
+        //            .Where(t => !occupiedTimes.Contains(t.Value.Trim()))
+        //            .Select(t => new { t.Value, t.Text })  // Отправляем Value и Text
+        //            .ToList();
+
+        //        if (availableTimeSlots.Any())
+        //        {
+        //            Console.WriteLine($"Available time slots: {string.Join(", ", availableTimeSlots.Select(t => t.Value))}");
+        //        }
+        //        else
+        //        {
+        //            Console.WriteLine("No available time slots.");
+        //        }
+
+        //        return Json(availableTimeSlots);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"An error occurred: {ex.Message}");
+        //        return StatusCode(500, new { error = "An error occurred while fetching available time slots." });
+        //    }
+        //}
+
+
+
+
+        //// GET: Edit
+        //public async Task<IActionResult> Edit(int id)
+        //{
+        //    var schedule = await _context.SHEDULE_N_PUBL.FindAsync(id);
+        //    if (schedule == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    return View(schedule);
+        //}
+
+        //// POST: Edit
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        //public async Task<IActionResult> Edit(ScheduleNPublEntity schedule)
+        //{
+        //    if (ModelState.IsValid)
+        //    {
+        //        try
+        //        {
+        //            var existingSchedule = await _context.SHEDULE_N_PUBL.FindAsync(schedule.LESSON_ID);
+        //            if (existingSchedule != null)
+        //            {
+        //                _context.Entry(existingSchedule).CurrentValues.SetValues(schedule);
+        //                await _context.SaveChangesAsync();
+        //                return RedirectToAction(nameof(Index));
+        //            }
+        //            else
+        //            {
+        //                return NotFound();
+        //            }
+        //        }
+        //        catch (DbUpdateConcurrencyException)
+        //        {
+        //            throw;
+        //        }
+        //    }
+        //    return View(schedule);
+        //}
+
+        //// Метод для получения всех возможных временных интервалов
+        //private List<SelectListItem> GetAllTimeSlots()
+        //{
+        //    return new List<SelectListItem>
+        //    {
+        //        new SelectListItem { Value = "08:00", Text = "08:00" },
+        //        new SelectListItem { Value = "09:40", Text = "09:40" },
+        //        new SelectListItem { Value = "11:20", Text = "11:20" },
+        //        new SelectListItem { Value = "13:30", Text = "13:30" },
+        //        new SelectListItem { Value = "15:10", Text = "15:10" },
+        //        new SelectListItem { Value = "16:50", Text = "16:50" },
+        //        new SelectListItem { Value = "18:20", Text = "18:20" },
+        //        new SelectListItem { Value = "20:00", Text = "20:00" }
+        //    };
+        //}
     }
 }
 

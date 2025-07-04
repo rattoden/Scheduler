@@ -11,7 +11,6 @@
         <select asp-for="GROUPID" class="form-control" asp-items="ViewBag.Groups" id="GroupSelect" required>
             <option value="">Выберите группу</option>
         </select>
-        <span asp-validation-for="GROUPID" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -19,7 +18,6 @@
         <select asp-for="VREM" class="form-control" asp-items="ViewBag.Times" id="TimeSelect" required>
             <option value="">Выберите время</option>
         </select>
-        <span asp-validation-for="VREM" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -27,7 +25,6 @@
         <select asp-for="DEN" class="form-control" asp-items="ViewBag.DaysOfWeek" id="DayOfWeekSelect" required>
             <option value="">Выберите день недели</option>
         </select>
-        <span asp-validation-for="DEN" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -35,7 +32,6 @@
         <select asp-for="DATA" class="form-control" asp-items="ViewBag.DataOptions" required>
             <option value="">Выберите дату</option>
         </select>
-        <span asp-validation-for="DATA" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -43,7 +39,6 @@
         <select asp-for="DISCIPL_NUM" class="form-control" asp-items="ViewBag.Disciplins" required>
             <option value="">Выберите дисциплину</option>
         </select>
-        <span asp-validation-for="DISCIPL_NUM" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -51,7 +46,6 @@
         <select asp-for="FORM_ZAN" class="form-control" asp-items="ViewBag.FormZanOptions" required>
             <option value="">Выберите вид занятия</option>
         </select>
-        <span asp-validation-for="FORM_ZAN" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -59,7 +53,6 @@
         <select asp-for="AUDITORIYA" class="form-control" asp-items="ViewBag.Auditories" required>
             <option value="">Выберите аудиторию</option>
         </select>
-        <span asp-validation-for="AUDITORIYA" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -67,7 +60,6 @@
         <select asp-for="ZDANIE" class="form-control" asp-items="ViewBag.Buildings" required>
             <option value="">Выберите здание</option>
         </select>
-        <span asp-validation-for="ZDANIE" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -75,7 +67,6 @@
         <select asp-for="PREPODAVATEL" class="form-control" asp-items="ViewBag.Prepodavatels" required>
             <option value="">Выберите преподавателя</option>
         </select>
-        <span asp-validation-for="PREPODAVATEL" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -86,7 +77,6 @@
             <option value="2">экзамен</option>
             <option value="3">заочное</option>
         </select>
-        <span asp-validation-for="TIP" class="text-danger"></span>
     </div>
 
     <div class="form-row">
@@ -98,17 +88,15 @@
                 <option value="@year">@year</option>
             }
         </select>
-        <span asp-validation-for="YEARF" class="text-danger"></span>
     </div>
 
     <div class="form-row">
         <label asp-for="SEMESTR">Семестр</label>
         <select asp-for="SEMESTR" class="form-control" required>
             <option value="">Выберите семестр</option>
-            <option value="1">дневное</option>
-            <option value="2">экзамен</option>
+            <option value="1">осенний</option>
+            <option value="2">весенний</option>
         </select>
-        <span asp-validation-for="SEMESTR" class="text-danger"></span>
     </div>
 
     <div class="form-row">

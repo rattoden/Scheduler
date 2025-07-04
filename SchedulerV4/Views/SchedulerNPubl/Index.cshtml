@@ -19,6 +19,18 @@
     </select>
     <button type="button" id="showScheduleBtn">Показать расписание</button>
 </div>
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Успешно!</strong> @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Ошибка!</strong> @TempData["ErrorMessage"]
+    </div>
+}
 <button type="button" onclick="location.href='/SchedulerNPubl/Create'">Добавить занятие</button>
 <h2 style="text-align:center; margin-top: 30px;">
     @if (filteredGroupNo.HasValue)
@@ -47,6 +59,7 @@
             <th>Год расписания</th>
             <th>Семестр</th>
             <th></th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -60,16 +73,18 @@
                 <td>@item.Discipline?.NAME</td>
                 <td>@item.FORM_ZAN</td>
                 <td>@item.AUDITORIYA</td>
-                <td>@item.ZDANIE</td>
+                <td>@item.BUILDING_ID</td>
                 <td>@item.PREPODAVATEL</td>
                 <td>@(item.TIP == 1 ? "дневное" : (item.TIP == 2 ? "экзамен" : "заочное"))</td>
                 <td>@item.YEARF</td>
                 <td>@(item.SEMESTR == 1 ? "осенний" : "весенний")</td>
                 <td><button class="transferBtn">Перенести</button></td>
-@*                 <form asp-action="Delete" method="post" style="display:inline;">
-                    <input type="hidden" name="ID" value="@item.ID_AUDITORY" />
-                    <button type="submit" class="btn btn-danger">Удалить</button>
-                </form> *@
+                <td>
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="ID" value="@item.LESSON_ID" />
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </form>
+                </td>
             </tr>
         }
     </tbody>
@@ -236,6 +251,12 @@
 
     h1 {
         font-size: 40px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    h2 {
+        font-size: 30px;
         text-align: center;
         margin-bottom: 30px;
     }
