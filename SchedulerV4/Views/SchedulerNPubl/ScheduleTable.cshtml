@@ -1,0 +1,48 @@
+﻿@model List<SchedulerV4.Models.ScheduleNPublEntity>
+
+<table>
+    <thead>
+        <tr>
+            <th>Группа</th>
+            <th>День</th>
+            <th>Время</th>
+            <th>Дата</th>
+            <th>Дисциплина</th>
+            <th>Вид занятия</th>
+            <th>Аудитория</th>
+            <th>Здание</th>
+            <th>Преподаватель</th>
+            <th>Тип занятия</th>
+            <th>Год расписания</th>
+            <th>Семестр</th>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.GROUPNO</td>
+                <td>@item.DEN</td>
+                <td>@item.VREM</td>
+                <td>@item.DATA</td>
+                <td>@item.Discipline?.NAME</td>
+                <td>@item.FORM_ZAN</td>
+                <td>@item.AUDITORIYA</td>
+                <td>@item.BUILDING_ID</td>
+                <td>@item.PREPODAVATEL</td>
+                <td>@(item.TIP == 1 ? "дневное" : (item.TIP == 2 ? "экзамен" : "заочное"))</td>
+                <td>@item.YEARF</td>
+                <td>@(item.SEMESTR == 1 ? "осенний" : "весенний")</td>
+                <td><button class="transferBtn">Перенести</button></td>
+                <td>
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="ID" value="@item.LESSON_ID" />
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

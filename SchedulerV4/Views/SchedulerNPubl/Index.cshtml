@@ -6,98 +6,6 @@
     int? filteredGroupNo = ViewBag.FilteredGroupNo as int?;
 }
 
-<h1>Расписание занятий</h1>
-
-<div class="form-row">
-    <label for="groupSelect">Номер группы:</label>
-    <select id="groupSelect" name="groupId">
-        <option value="">-- Все группы --</option>
-        @foreach (var group in groupList)
-        {
-            <option value="@group.Value">@group.Text</option>
-        }
-    </select>
-    <button type="button" id="showScheduleBtn">Показать расписание</button>
-</div>
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <strong>Успешно!</strong> @TempData["SuccessMessage"]
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong>Ошибка!</strong> @TempData["ErrorMessage"]
-    </div>
-}
-<button type="button" onclick="location.href='/SchedulerNPubl/Create'">Добавить занятие</button>
-<h2 style="text-align:center; margin-top: 30px;">
-    @if (filteredGroupNo.HasValue)
-    {
-        <text>Группа @filteredGroupNo</text>
-    }
-    else
-    {
-        <text>Все группы</text>
-    }
-</h2>
-
-<table>
-    <thead>
-        <tr>
-            <th>Группа</th>
-            <th>День</th>
-            <th>Время</th>
-            <th>Дата</th>
-            <th>Дисциплина</th>
-            <th>Вид занятия</th>
-            <th>Аудитория</th>
-            <th>Здание</th>
-            <th>Преподаватель</th>
-            <th>Тип занятия</th>
-            <th>Год расписания</th>
-            <th>Семестр</th>
-            <th></th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.GROUPNO</td>
-                <td>@item.DEN</td>
-                <td>@item.VREM</td>
-                <td>@item.DATA</td>
-                <td>@item.Discipline?.NAME</td>
-                <td>@item.FORM_ZAN</td>
-                <td>@item.AUDITORIYA</td>
-                <td>@item.BUILDING_ID</td>
-                <td>@item.PREPODAVATEL</td>
-                <td>@(item.TIP == 1 ? "дневное" : (item.TIP == 2 ? "экзамен" : "заочное"))</td>
-                <td>@item.YEARF</td>
-                <td>@(item.SEMESTR == 1 ? "осенний" : "весенний")</td>
-                <td><button class="transferBtn">Перенести</button></td>
-                <td>
-                    <form asp-action="Delete" method="post" style="display:inline;">
-                        <input type="hidden" name="ID" value="@item.LESSON_ID" />
-                        <button type="submit" class="btn btn-danger">Удалить</button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-<script>
-    document.getElementById('showScheduleBtn').addEventListener('click', () => {
-        const groupId = document.getElementById('groupSelect').value;
-        const query = groupId ? `?groupId=${groupId}` : '';
-        window.location.href = `/SchedulerNPubl/Index${query}`;
-    });
-</script>
-
 <style>
     .add-btn {
         display: inline-block;
@@ -113,6 +21,7 @@
         .add-btn:hover {
             background-color: #218838;
         }
+
     .form-row {
         display: flex;
         align-items: center;
@@ -122,14 +31,15 @@
         padding: 30px 40px;
         border-radius: 12px;
         box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        max-width: 800px;
+        width: 100%; /* растянуть на всю ширину */
+        max-width: none; /* убрать ограничение */
         margin: 0 auto 40px;
     }
 
     label {
         font-size: 17px;
         color: #555;
-        width:auto;
+        width: auto;
     }
 
     select {
@@ -190,61 +100,7 @@
         background-color: #0088CE;
         color: white;
     }
-</style>
-<div class="modal" id="transferModal">
-    <div class="modal-content">
-        <div class="modal-header">Перенос занятия</div>
-        <form id="transferForm">
-            <div class="modal-row">
-                <label for="newDate">Дата:</label>
-                <input type="date" id="newDate" name="newDate" required />
-            </div>
-            <div class="modal-row">
-                <label for="newTime">Время:</label>
-                <input type="text" id="newTime" name="newTime" placeholder="например, 14:00-15:30" required />
-            </div>
-            <div class="modal-row">
-                <label for="newBuilding">Здание:</label>
-                <select id="newBuilding" name="newBuilding" required>
-                    <option value="" disabled selected>Выберите здание</option>
-                    <option value="Главный корпус">1</option>
-                    <option value="Физический корпус">2</option>
-                    <option value="Экономический корпус">7</option>
-                    <option value="Лабораторный корпус">8</option>
-                </select>
-            </div>
-            <div class="modal-row">
-                <label for="newRoom">Аудитория:</label>
-                <input type="text" id="newRoom" name="newRoom" placeholder="Введите аудиторию" />
-            </div>
-            <div class="modal-row">
-                <label for="newType">Тип занятия:</label>
-                <select id="newType" name="newType" required>
-                    <option value="" disabled selected>Выберите тип занятия</option>
-                    <option value="Лекция">Лекция</option>
-                    <option value="Практика">Практика</option>
-                    <option value="Лабораторная работа">Лабораторная работа</option>
-                </select>
-            </div>
-            <div class="modal-row">
-                <label for="newTeacher">Преподаватель:</label>
-                <select id="newTeacher" name="newTeacher" required>
-                    <option value="" disabled selected>Выберите преподавателя</option>
-                    <option value="Иванов И.И.">Иванов И.И.</option>
-                    <option value="Петров П.П.">Петров П.П.</option>
-                    <option value="Сидоров С.С.">Сидоров С.С.</option>
-                    <option value="Кузнецова К.К.">Кузнецова К.К.</option>
-                </select>
-            </div>
-            <div class="modal-footer">
-                <button type="submit">Сохранить</button>
-                <button type="button" id="cancelBtn">Отмена</button>
-            </div>
-        </form>
-    </div>
-</div>
 
-<style>
     body {
         color: #333;
     }
@@ -323,25 +179,29 @@
     }
 
     .modal-row {
-        margin-bottom: 15px;
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        margin-bottom: 15px;
     }
 
         .modal-row label {
-            width: 130px;
+            width: 200px; /* одинаковая ширина у всех меток */
             font-size: 18px;
         }
 
+        .modal-row select,
         .modal-row input[type="text"],
         .modal-row input[type="date"],
-        .modal-row input[type="time"],
-        .modal-row select {
+        .modal-row input[type="time"] {
             flex-grow: 1;
             font-size: 18px;
             padding: 6px 10px;
             border: 1.5px solid #ccc;
             border-radius: 6px;
+            width: 100%; /* чтобы занимал доступное пространство */
+            box-sizing: border-box;
         }
 
     .modal-footer {
@@ -356,35 +216,361 @@
         }
 </style>
 
+<h1>Расписание занятий</h1>
+
+@*                                     Ф И Л Ь Т Р Ы *@
+
+<div class="form-row">
+    <label for="groupSelect">Номер группы:</label>
+<select id="groupSelect" name="groupId">
+    <option value="">-- Все группы --</option>
+    @foreach (var group in groupList)
+    {
+            @if (ViewBag.SelectedGroupId?.ToString() == group.Value)
+            {
+                <option value="@group.Value" selected>@group.Text</option>
+            }
+            else
+            {
+                <option value="@group.Value">@group.Text</option>
+            }
+    }
+</select>
+
+    <label for="tipSelect">Тип занятия:</label>
+    <select id="tipSelect" name="tip">
+        <option value="">-- Выберите тип --</option>
+        @if (ViewBag.SelectedTip?.ToString() == "1")
+        {
+            <option value="1" selected>дневное</option>
+        }
+        else
+        {
+            <option value="1">дневное</option>
+        }
+        @if (ViewBag.SelectedTip?.ToString() == "2")
+        {
+            <option value="2" selected>экзамен</option>
+        }
+        else
+        {
+            <option value="2">экзамен</option>
+        }
+        @if (ViewBag.SelectedTip?.ToString() == "3")
+        {
+            <option value="3" selected>заочное</option>
+        }
+        else
+        {
+            <option value="3">заочное</option>
+        }
+    </select>
+
+    <label for="semesterSelect">Семестр:</label>
+    <select id="semesterSelect" name="semester">
+        <option value="">-- Выберите семестр --</option>
+        @if (ViewBag.SelectedSemester?.ToString() == "1")
+        {
+            <option value="1" selected>осенний</option>
+        }
+        else
+        {
+            <option value="1">осенний</option>
+        }
+        @if (ViewBag.SelectedSemester?.ToString() == "2")
+        {
+            <option value="2" selected>весенний</option>
+        }
+        else
+        {
+            <option value="2">весенний</option>
+        }
+    </select>
+
+    <label for="yearSelect">Год:</label>
+    <select id="yearSelect" name="year">
+        <option value="">-- Выберите год --</option>
+        @{
+            int currentYear = DateTime.Now.Year;
+            for (int y = currentYear - 1; y <= currentYear + 1; y++)
+            {
+                if (ViewBag.SelectedYear?.ToString() == y.ToString())
+                {
+                    <option value="@y" selected>@y</option>
+                }
+                else
+                {
+                    <option value="@y">@y</option>
+                }
+            }
+        }
+    </select>
+    <button type="button" id="showScheduleBtn" style="width:300px">Показать расписание</button>
+</div>
 <script>
-    // Работа с модальным окном
-    const modal = document.getElementById('transferModal');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const transferForm = document.getElementById('transferForm');
+    document.getElementById('showScheduleBtn').addEventListener('click', () => {
+        const groupId = document.getElementById('groupSelect').value;
+        const tip = document.getElementById('tipSelect').value;
+        const semester = document.getElementById('semesterSelect').value;
+        const year = document.getElementById('yearSelect').value;
 
-    document.querySelectorAll('.transferBtn').forEach(button => {
-      button.addEventListener('click', () => {
-        modal.style.display = 'flex';
-      });
-    });
+        const params = new URLSearchParams();
 
-    cancelBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-      transferForm.reset();
-    });
+        if (groupId) params.append('groupId', groupId);
+        if (tip) params.append('tip', tip);
+        if (semester) params.append('semester', semester);
+        if (year) params.append('year', year);
 
-    transferForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      alert('Данные сохранены!');
-      modal.style.display = 'none';
-      transferForm.reset();
-    });
-
-    // Закрытие модального по клику вне окна
-    window.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.style.display = 'none';
-        transferForm.reset();
-      }
+        const query = params.toString();
+        window.location.href = `/SchedulerNPubl/Index${query ? '?' + query : ''}`;
     });
 </script>
+
+@*                                    В Ы В О Д     О Ш И Б К И *@
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Успешно!</strong> @TempData["SuccessMessage"]
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Ошибка!</strong> @TempData["ErrorMessage"]
+    </div>
+}
+@if (ViewBag.ShowAddButton == true)
+{
+    <button type="button" id="openCreateModalBtn">Добавить занятие</button>
+}
+
+@*                                    Д О Б А В Л Е Н И Е   О К Н О *@
+
+<div class="modal" id="createModal">
+    <div class="modal-content">
+        <div class="modal-header">Добавление занятия группе номер 
+            @if (filteredGroupNo.HasValue)
+            {
+                <text>@filteredGroupNo</text>
+            }
+            else
+            {
+                <text></text>
+            }
+        </div>
+        <form id="transferForm">
+            <input type="hidden" id="createGroupNo" name="GROUPNO" value="@ViewBag.FilteredGroupNo" />
+            <div class="modal-row">
+                <label style="width:200px" for="createTime">Время</label>
+                <select name="VREM" required>
+                    <option value="">Выберите время</option>
+                    <option value="08:00">08:00</option>
+                    <option value="09:40">09:40</option>
+                    <option value="11:20">11:20</option>
+                    <option value="13:30">13:30</option>
+                    <option value="15:10">15:10</option>
+                    <option value="16:50">16:50</option>
+                    <option value="18:25">18:25</option>
+                    <option value="20:00">20:00</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createDay">День</label>
+                <select name="DEN" required>
+                    <option value="">Выберите день</option>
+                    <option value="пн">пн</option>
+                    <option value="вт">вт</option>
+                    <option value="ср">ср</option>
+                    <option value="чт">чт</option>
+                    <option value="пт">пт</option>
+                    <option value="сб">сб</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createData">Дата</label>
+                <select name="DATA" required>
+                    <option value="">Выберите день</option>
+                    <option value="чет/неч">чет/неч</option>
+                    <option value="чет">чет</option>
+                    <option value="неч">неч</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createDiscipline">Дисциплина</label>
+                <select name="DISCIPL_NUM" required>
+                    <option value="">Выберите дисциплину</option>
+                    @foreach (var item in ViewBag.Disciplins as List<SelectListItem>)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createFormZan">Вид занятия</label>
+                <select name="FORM_ZAN" required>
+                    <option value="">Выберите вид занятия</option>
+                    <option value="лек">лек</option>
+                    <option value="пр">пр</option>
+                    <option value="л.р.">л.р.</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createAud">Аудитория</label>
+                <select id="createAud" name="AUDITORIYA" required>
+                    <option value="">Выберите аудиторию</option>
+                    @foreach (var a in ViewBag.Auditories as List<SelectListItem>)
+                    {
+                        <option value="@a.Value">@a.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createBuilding">Здание</label>
+                <select id="createBuilding" name="ZDANIE" required>
+                    <option value="">Выберите здание</option>
+                    @foreach (var item in ViewBag.Buildings as List<SelectListItem>)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createTeacher">Преподаватель</label>
+                <select id="createTeacher" name="PREPODAVATEL" required>
+                    <option value="">Выберите преподавателя</option>
+                    @foreach (var t in ViewBag.Prepodavatels as List<SelectListItem>)
+                    {
+                        <option value="@t.Value">@t.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createType">Тип занятия</label>
+                <select id="createType" name="TIP" required>
+                    <option value="">Выберите тип занятия</option>
+                    <option value="1">дневное</option>
+                    <option value="2">экзамен</option>
+                    <option value="3">заочное</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="submit">Добавить</button>
+                <button type="button" id="cancelCreateBtn">Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const createModal = document.getElementById('createModal');
+    const openCreateModalBtn = document.getElementById('openCreateModalBtn');
+    const cancelCreateBtn = document.getElementById('cancelCreateBtn');
+    const createForm = document.getElementById('transferForm');
+
+    openCreateModalBtn.addEventListener('click', () => {
+        createModal.style.display = 'flex';
+    });
+
+    cancelCreateBtn.addEventListener('click', () => {
+        createModal.style.display = 'none';
+        createForm.reset();
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === createModal) {
+            createModal.style.display = 'none';
+            createForm.reset();
+        }
+    });
+</script>
+
+<script>
+    document.getElementById('transferForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        const response = await fetch('/SchedulerNPubl/Create', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            const groupNo = formData.get("GROUPNO");
+
+            // Закрыть модалку
+            document.getElementById('createModal').style.display = 'none';
+            form.reset();
+
+    setTimeout(async () => {
+        const tableResponse = await fetch(`/SchedulerNPubl/GetScheduleTable?groupId=${groupNo}`);
+        const tableHtml = await tableResponse.text();
+        document.querySelector('table').outerHTML = tableHtml;
+    }, 200);
+        } else {
+            alert("Ошибка при добавлении!");
+        }
+    });
+</script>
+
+@*                                     В Ы В О Д    Р А С П И С А Н И Я *@
+
+<h2 style="text-align:center; margin-top: 30px;">
+    @if (filteredGroupNo.HasValue)
+    {
+        <text>Группа @filteredGroupNo</text>
+    }
+    else
+    {
+        <text>Все группы</text>
+    }
+</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Группа</th>
+            <th>День</th>
+            <th>Время</th>
+            <th>Дата</th>
+            <th>Дисциплина</th>
+            <th>Вид занятия</th>
+            <th>Аудитория</th>
+            <th>Здание</th>
+            <th>Преподаватель</th>
+            <th>Тип занятия</th>
+            <th>Год расписания</th>
+            <th>Семестр</th>
+            <th></th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.GROUPNO</td>
+                <td>@item.DEN</td>
+                <td>@item.VREM</td>
+                <td>@item.DATA</td>
+                <td>@item.Discipline?.NAME</td>
+                <td>@item.FORM_ZAN</td>
+                <td>@item.AUDITORIYA</td>
+                <td>@item.BUILDING_ID</td>
+                <td>@item.PREPODAVATEL</td>
+                <td>@(item.TIP == 1 ? "дневное" : (item.TIP == 2 ? "экзамен" : "заочное"))</td>
+                <td>@item.YEARF</td>
+                <td>@(item.SEMESTR == 1 ? "осенний" : "весенний")</td>
+                <td><button class="transferBtn">Перенести</button></td>
+                <td>
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="ID" value="@item.LESSON_ID" />
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
