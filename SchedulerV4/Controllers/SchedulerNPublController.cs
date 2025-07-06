@@ -189,7 +189,7 @@ namespace SchedulerV4.Controllers
             return order.IndexOf(time) + 1;
         }
 
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id, int? groupId, int? tip, int? semester, int? year)
         {
             var schedule = await _context.SHEDULE_N_PUBL.FindAsync(id);
             if (schedule != null)
@@ -197,7 +197,7 @@ namespace SchedulerV4.Controllers
                 _context.SHEDULE_N_PUBL.Remove(schedule);
                 await _context.SaveChangesAsync();
             }
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), new { groupId, tip, semester, year });
         }
     }
 }

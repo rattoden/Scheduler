@@ -67,7 +67,7 @@
         }
 
     button {
-        font-size: 14px;
+        font-size: 15px;
         height: 48px;
         background: #0088CE;
         color: white;
@@ -208,6 +208,11 @@
             padding: 10px 25px;
             font-size: 18px;
         }
+
+    #dateInputs input[type="date"] {
+        margin-bottom: 5px;
+        display: block;
+    }
 </style>
 
 <h1>Расписание занятий</h1>
@@ -216,21 +221,20 @@
 
 <div class="form-row">
     <label for="groupSelect">Номер группы:</label>
-<select id="groupSelect" name="groupId">
-    <option value="">-- Все группы --</option>
-    @foreach (var group in groupList)
-    {
-            @if (ViewBag.SelectedGroupId?.ToString() == group.Value)
-            {
-                <option value="@group.Value" selected>@group.Text</option>
-            }
-            else
-            {
-                <option value="@group.Value">@group.Text</option>
-            }
-    }
-</select>
-
+    <select id="groupSelect" name="groupId">
+        <option value="">-- Все группы --</option>
+        @foreach (var group in groupList)
+        {
+                @if (ViewBag.SelectedGroupId?.ToString() == group.Value)
+                {
+                    <option value="@group.Value" selected>@group.Text</option>
+                }
+                else
+                {
+                    <option value="@group.Value">@group.Text</option>
+                }
+        }
+    </select>
     <label for="tipSelect">Тип занятия:</label>
     <select id="tipSelect" name="tip">
         <option value="">-- Выберите тип --</option>
@@ -301,6 +305,9 @@
     </select>
     @* <button type="button" id="showScheduleBtn" style="width:300px">Показать расписание</button> *@
 </div>
+
+@*                                    Кнопка Добавить при выборе группы *@
+
 <script>
     document.getElementById('showScheduleBtn').addEventListener('click', () => {
         const groupId = document.getElementById('groupSelect').value;
@@ -338,19 +345,23 @@
         <form id="transferForm">
             <input type="hidden" id="createGroupNo" name="GROUPNO" value="@ViewBag.FilteredGroupNo" />
             <div class="modal-row">
-                <label style="width:200px" for="createTime">Время</label>
-                <select name="VREM" required>
-                    <option value="">Выберите время</option>
-                    <option value="08:00">08:00</option>
-                    <option value="09:40">09:40</option>
-                    <option value="11:20">11:20</option>
-                    <option value="13:30">13:30</option>
-                    <option value="15:10">15:10</option>
-                    <option value="16:50">16:50</option>
-                    <option value="18:25">18:25</option>
-                    <option value="20:00">20:00</option>
+                <label style="width:200px" for="paritySelect">Четность</label>
+                <select id="paritySelect">
+                    <option value="">Выберите</option>
+                    <option value="чет/неч">чет/неч</option>
+                    <option value="чет">чет</option>
+                    <option value="неч">неч</option>
                 </select>
             </div>
+            <div class="modal-row" id="datePickerRow">
+                <label style="width:200px">Доп. даты</label>
+                <div id="dateInputs" style="flex-grow:1;">
+                    <input type="date" class="extra-date" />
+                </div>
+                <button type="button" onclick="addDateInput()">+</button>
+            </div>
+            <!-- Скрытое поле для сохранения итогового значения -->
+            <input type="hidden" name="DATA" id="hiddenDataField" />
             <div class="modal-row">
                 <label style="width:200px" for="createDay">День</label>
                 <select name="DEN" required>
@@ -364,12 +375,17 @@
                 </select>
             </div>
             <div class="modal-row">
-                <label style="width:200px" for="createData">Дата</label>
-                <select name="DATA" required>
-                    <option value="">Выберите день</option>
-                    <option value="чет/неч">чет/неч</option>
-                    <option value="чет">чет</option>
-                    <option value="неч">неч</option>
+                <label style="width:200px" for="createTime">Время</label>
+                <select name="VREM" required>
+                    <option value="">Выберите время</option>
+                    <option value="08:00">08:00</option>
+                    <option value="09:40">09:40</option>
+                    <option value="11:20">11:20</option>
+                    <option value="13:30">13:30</option>
+                    <option value="15:10">15:10</option>
+                    <option value="16:50">16:50</option>
+                    <option value="18:25">18:25</option>
+                    <option value="20:00">20:00</option>
                 </select>
             </div>
             <div class="modal-row">
@@ -432,6 +448,8 @@
     </div>
 </div>
 
+@*                                   Открытие/закрытие модального окна *@
+
 <script>
     const createModal = document.getElementById('createModal');
     const openCreateModalBtn = document.getElementById('openCreateModalBtn');
@@ -469,9 +487,47 @@
     });
 </script>
 
+@*                                    Для дат *@
+
+<script>
+    function addDateInput() {
+        const container = document.getElementById('dateInputs');
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.className = 'extra-date';
+        container.appendChild(document.createElement('br'));
+        container.appendChild(input);
+    }
+</script>
+
+@*                                    Добавление строки *@
+
 <script>
         document.getElementById('transferForm').addEventListener('submit', async function (e) {
         e.preventDefault();
+
+        const parity = document.getElementById('paritySelect').value;
+
+        const dates = Array.from(document.querySelectorAll('.extra-date'))
+            .map(input => input.value)
+            .filter(d => d !== '')
+            .map(d => {
+                const dateObj = new Date(d);
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                return `${day}.${month}`;
+            });
+
+        const uniqueDates = [...new Set(dates)];
+        uniqueDates.sort((a, b) => {
+            const [dayA, monthA] = a.split('.').map(Number);
+            const [dayB, monthB] = b.split('.').map(Number);
+            return monthA !== monthB ? monthA - monthB : dayA - dayB;
+        });
+
+        const combined = [parity, ...uniqueDates].join(', ').trim().replace(/^,|,$/, '');
+        document.getElementById('hiddenDataField').value = combined;
+        console.log("=> Сформированное DATA:", combined);
 
         const form = e.target;
         const formData = new FormData(form);
@@ -481,33 +537,32 @@
             body: formData
         });
 
-            if (response.ok) {
-                alert("Занятие успешно добавлено!");
+        if (response.ok) {
+            alert("Занятие успешно добавлено!");
+            document.getElementById('createModal').style.display = 'none';
+            form.reset();
 
-                // Закрыть модалку
-                document.getElementById('createModal').style.display = 'none';
-                form.reset();
+            const groupId = document.getElementById('groupSelect').value;
+            const tip = document.getElementById('tipSelect').value;
+            const semester = document.getElementById('semesterSelect').value;
+            const year = document.getElementById('yearSelect').value;
 
-                // Перенаправление с фильтрами
-                const groupId = document.getElementById('groupSelect').value;
-                const tip = document.getElementById('tipSelect').value;
-                const semester = document.getElementById('semesterSelect').value;
-                const year = document.getElementById('yearSelect').value;
+            const params = new URLSearchParams();
+            if (groupId) params.append('groupId', groupId);
+            if (tip) params.append('tip', tip);
+            if (semester) params.append('semester', semester);
+            if (year) params.append('year', year);
 
-                const params = new URLSearchParams();
-                if (groupId) params.append('groupId', groupId);
-                if (tip) params.append('tip', tip);
-                if (semester) params.append('semester', semester);
-                if (year) params.append('year', year);
-
-                window.location.href = `/SchedulerNPubl/Index${params.toString() ? '?' + params.toString() : ''}`;
-            } 
-            else {
-                const errorText = await response.text();
-                alert("Ошибка при добавлении: " + errorText);
-            }
+            window.location.href = `/SchedulerNPubl/Index${params.toString() ? '?' + params.toString() : ''}`;
+        } else {
+            const errorText = await response.text();
+            alert("Ошибка при добавлении: " + errorText);
+        }
     });
 </script>
+
+@*                                    Для обновления вывода расписания *@
+
 <script>
     function updateSchedule() {
         const groupId = document.getElementById('groupSelect').value;
@@ -532,6 +587,7 @@
     document.getElementById('semesterSelect').addEventListener('change', updateSchedule);
     document.getElementById('yearSelect').addEventListener('change', updateSchedule);
 </script>
+
 
 @*                                     В Ы В О Д    Р А С П И С А Н И Я *@
 
@@ -585,6 +641,10 @@
                 <td>
                     <form asp-action="Delete" method="post" style="display:inline;">
                         <input type="hidden" name="ID" value="@item.LESSON_ID" />
+                        <input type="hidden" name="groupId" value="@ViewBag.SelectedGroupId" />
+                        <input type="hidden" name="tip" value="@ViewBag.SelectedTip" />
+                        <input type="hidden" name="semester" value="@ViewBag.SelectedSemester" />
+                        <input type="hidden" name="year" value="@ViewBag.SelectedYear" />
                         <button type="submit" class="btn btn-danger">Удалить</button>
                     </form>
                 </td>
