@@ -122,51 +122,137 @@ namespace SchedulerV4.Controllers
 
             return View(orderedSchedule);
         }
+        public class ScheduleNPublInputModel
+        {
+            public int GROUPNO { get; set; }
+            public string DEN { get; set; }
+            public string VREM { get; set; }
+            public string DATA { get; set; }
+            public int DISCIPL_NUM { get; set; }
+            public string FORM_ZAN { get; set; }
+            public string ZDANIE { get; set; }
+            public string AUDITORIYA { get; set; }
+            public string PREPODAVATEL { get; set; }
+            public int TIP { get; set; }
+            public int SEMESTR { get; set; }
+            public int YEARF { get; set; }
+        }
 
         // POST: Create
         [HttpPost]
-        public async Task<IActionResult> Create(ScheduleNPublEntity schedule)
+        public async Task<IActionResult> Create(ScheduleNPublEntity input)
         {
-            // Генерация нового ID
-            int maxId = _context.SHEDULE_N_PUBL.Count() > 0 ? _context.SHEDULE_N_PUBL.Max(s => s.LESSON_ID) : 0;
-            schedule.LESSON_ID = maxId + 1;
+            if (input == null)
+                return BadRequest("Неверные данные.");
 
-            // Заполнение GROUPID по GROUPNO
-            var group = _context.GROUPS.AsEnumerable().FirstOrDefault(g => g.GROUPNO == schedule.GROUPNO);
-            schedule.GROUPID = group?.GROUPID ?? 0;
-            
-            // Получение ID аудитории и здания, если необходимо по имени
+            // Найти группу по номеру группы
+            var group = _context.GROUPS
+                .FirstOrDefault(g => g.GROUPNO == input.GROUPNO);
+
+            if (group == null)
+                return BadRequest("Группа не найдена.");
+
+            input.GROUPID = group.GROUPID;
+
+            // Подготовка строк для сравнения
+            string trimmedDen = (input.DEN ?? "").Trim().ToLower();
+            string trimmedVrem = (input.VREM ?? "").Trim();
+            string trimmedAud = (input.AUDITORIYA ?? "").Trim().ToLower();
+            string trimmedZdan = (input.ZDANIE ?? "").Trim().ToLower();
+
+            int semestr = input.SEMESTR;
+            int yearf = input.YEARF;
+
+            // --- Проверка конфликта по группе ---
+            var groupSchedules = await _context.SHEDULE_N_PUBL
+                .Where(s => s.GROUPID == input.GROUPID && s.SEMESTR == semestr && s.YEARF == yearf)
+                .ToListAsync();
+
+            bool groupConflict = groupSchedules.Any(s =>
+                (s.DEN ?? "").Trim().ToLower() == trimmedDen &&
+                (s.VREM ?? "").Trim() == trimmedVrem);
+
+            if (groupConflict)
+                return BadRequest("Ошибка: У выбранной группы уже есть занятие в это время, день, семестр и год.");
+
+            // --- Проверка конфликта по аудитории ---
+            var auditorySchedules = await _context.SHEDULE_N_PUBL
+                .Where(s => s.GROUPID != input.GROUPID && s.SEMESTR == semestr && s.YEARF == yearf)
+                .ToListAsync();
+
+            bool auditoryConflict = auditorySchedules.Any(s =>
+                (s.DEN ?? "").Trim().ToLower() == trimmedDen &&
+                (s.VREM ?? "").Trim() == trimmedVrem &&
+                (s.ZDANIE ?? "").Trim().ToLower() == trimmedZdan &&
+                (s.AUDITORIYA ?? "").Trim().ToLower() == trimmedAud);
+
+            if (auditoryConflict)
+                return BadRequest("Ошибка: Эта аудитория в это время занята другой группой в данном семестре и году.");
+
+            // --- Найти преподавателя ---
+            var prepod = _context.SOTRUDNIK
+                .FirstOrDefault(p =>
+                    ((p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME) ?? "").Trim() == (input.PREPODAVATEL ?? "").Trim());
+
+            if (prepod == null)
+                return BadRequest("Преподаватель не найден.");
+
+            input.PREPOD_ID = prepod.ID_SOTR;
+            input.TABNUM = prepod.TAB_NO ?? "NULL";
+            input.DOLZNOST = prepod.RANG ?? "NULL";
+
+            // --- Проверка конфликта по преподавателю ---
+            var teacherSchedules = await _context.SHEDULE_N_PUBL
+                .Where(s => s.PREPOD_ID == input.PREPOD_ID && s.SEMESTR == semestr && s.YEARF == yearf)
+                .ToListAsync();
+
+            bool teacherConflict = teacherSchedules.Any(s =>
+                (s.DEN ?? "").Trim().ToLower() == trimmedDen &&
+                (s.VREM ?? "").Trim() == trimmedVrem);
+
+            if (teacherConflict)
+                return BadRequest("Ошибка: У выбранного преподавателя уже есть занятие в это время, день, семестр и год.");
+
+            // --- Найти аудиторию ---
             var aud = _context.SPR_AUDITORY
-    .AsEnumerable()
-    .FirstOrDefault(a => a.NOMER.Trim().Equals(schedule.AUDITORIYA?.Trim(), StringComparison.InvariantCultureIgnoreCase));
-            schedule.AUDITORY_ID = aud?.ID_AUDITORY ?? 0;
-            var zdan = _context.SPR_BUILDING.AsEnumerable().FirstOrDefault(z => z.NAME == schedule.ZDANIE);
-            schedule.BUILDING_ID = zdan?.ID_BUILDING ?? 0;
+                .FirstOrDefault(a => (a.NOMER ?? "").Trim().Equals(trimmedAud, StringComparison.InvariantCultureIgnoreCase));
 
-            // Получение ID преподавателя, если возможно
-            var prepod = _context.SOTRUDNIK.AsEnumerable().FirstOrDefault(p => (p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME) == schedule.PREPODAVATEL);
-            schedule.PREPOD_ID = prepod?.ID_SOTR ?? 0;
-            schedule.TABNUM = prepod?.TAB_NO ?? "NULL";
-            schedule.DOLZNOST = prepod?.RANG ?? "NULL";
+            input.AUDITORY_ID = aud?.ID_AUDITORY ?? 0;
 
-            // Обработка позиций (можно улучшить при необходимости)
-            schedule.DEN_POS = GetDayPosition(schedule.DEN); // Понедельник=1, вторник=2 и т.д.
-            schedule.TIME_POS = GetTimePosition(schedule.VREM); // 08:00=1, 09:40=2 и т.д.
+            // --- Найти здание ---
+            var zdan = _context.SPR_BUILDING
+                .FirstOrDefault(z => (z.NAME ?? "").Trim().ToLower() == trimmedZdan);
 
-            // Значения по умолчанию для GUIDE
-            schedule.NUM_DISCIPL_GUIDE = 1;
+            input.BUILDING_ID = zdan?.ID_BUILDING ?? 0;
+
+            // --- Генерация нового ID (LESSON_ID) ---
+            int maxId = _context.SHEDULE_N_PUBL
+                .Select(s => s.LESSON_ID)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            input.LESSON_ID = maxId + 1;
+
+            // --- Заполнение позиций ---
+            input.DEN_POS = GetDayPosition(input.DEN);
+            input.TIME_POS = GetTimePosition(input.VREM);
+            input.NUM_DISCIPL_GUIDE = 1;
 
             try
             {
-                _context.SHEDULE_N_PUBL.Add(schedule);
+                _context.SHEDULE_N_PUBL.Add(input);
                 await _context.SaveChangesAsync();
-                return Ok(); // Возвращаем успешный результат
+                return Ok();
             }
-            catch
+            catch (Exception ex)
             {
-                return StatusCode(500); // Ошибка
+                return StatusCode(500, "Ошибка при сохранении занятия: " + ex.Message);
             }
         }
+
+
+
+
 
         // Вспомогательные методы
         private int GetDayPosition(string day)
@@ -208,7 +294,7 @@ namespace SchedulerV4.Controllers
 
             var auditories = _context.SPR_AUDITORY
                 .Where(a => _context.SPR_BUILDING
-                    .Any(b => b.NAME == buildingName && b.ID_BUILDING == a.ID_BUILDING))
+                    .Count(b => b.NAME == buildingName && b.ID_BUILDING == a.ID_BUILDING) > 0)
                 .Select(a => new SelectListItem
                 {
                     Value = a.NOMER,

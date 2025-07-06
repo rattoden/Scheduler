@@ -562,7 +562,19 @@
         console.log("=> Сформированное DATA:", combined);
 
         const form = e.target;
-        const formData = new FormData(form);
+            const formData = new FormData();
+    formData.append("GROUPNO", document.getElementById("createGroupNo").value);
+    formData.append("DEN", form.DEN.value);
+    formData.append("VREM", form.VREM.value);
+    formData.append("DATA", document.getElementById("hiddenDataField").value);
+    formData.append("DISCIPL_NUM", form.DISCIPL_NUM.value);
+    formData.append("FORM_ZAN", form.FORM_ZAN.value);
+    formData.append("ZDANIE", form.ZDANIE.value);
+    formData.append("AUDITORIYA", form.AUDITORIYA.value);
+    formData.append("PREPODAVATEL", form.PREPODAVATEL.value);
+    formData.append("TIP", document.getElementById("hiddenTip").value);
+    formData.append("SEMESTR", document.getElementById("hiddenSemester").value);
+    formData.append("YEARF", document.getElementById("hiddenYear").value);
 
         const response = await fetch('/SchedulerNPubl/Create', {
             method: 'POST',
