@@ -199,6 +199,25 @@ namespace SchedulerV4.Controllers
             }
             return RedirectToAction(nameof(Index), new { groupId, tip, semester, year });
         }
+
+        [HttpGet]
+        public IActionResult GetAuditoriesByBuilding(string buildingName)
+        {
+            if (string.IsNullOrEmpty(buildingName))
+                return Json(new List<SelectListItem>());
+
+            var auditories = _context.SPR_AUDITORY
+                .Where(a => _context.SPR_BUILDING
+                    .Any(b => b.NAME == buildingName && b.ID_BUILDING == a.ID_BUILDING))
+                .Select(a => new SelectListItem
+                {
+                    Value = a.NOMER,
+                    Text = a.NOMER
+                })
+                .ToList();
+
+            return Json(auditories);
+        }
     }
 }
 

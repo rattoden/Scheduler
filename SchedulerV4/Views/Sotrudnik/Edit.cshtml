@@ -9,19 +9,19 @@
 <form asp-action="Edit" method="post">
     <input type="hidden" asp-for="ID_SOTR" />
     <div class="form-group">
-        <label asp-for="FIRSTNAME">Имя</label>
+        <label asp-for="FIRSTNAME">Фамилия</label>
         <input asp-for="FIRSTNAME" class="form-control" required maxlength="30" />
         <span asp-validation-for="FIRSTNAME" class="text-danger"></span>
     </div>
 
     <div class="form-group">
-        <label asp-for="MIDDLENAME">Отчество</label>
+        <label asp-for="MIDDLENAME">Имя</label>
         <input asp-for="MIDDLENAME" class="form-control" required maxlength="20" />
         <span asp-validation-for="MIDDLENAME" class="text-danger"></span>
     </div>
 
     <div class="form-group">
-        <label asp-for="LASTNAME">Фамилия</label>
+        <label asp-for="LASTNAME">Отчество</label>
         <input asp-for="LASTNAME" class="form-control" required maxlength="30" />
         <span asp-validation-for="LASTNAME" class="text-danger"></span>
     </div>

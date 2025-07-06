@@ -303,7 +303,6 @@
             }
         }
     </select>
-    @* <button type="button" id="showScheduleBtn" style="width:300px">Показать расписание</button> *@
 </div>
 
 @*                                    Кнопка Добавить при выборе группы *@
@@ -408,16 +407,6 @@
                 </select>
             </div>
             <div class="modal-row">
-                <label style="width:200px" for="createAud">Аудитория</label>
-                <select id="createAud" name="AUDITORIYA" required>
-                    <option value="">Выберите аудиторию</option>
-                    @foreach (var a in ViewBag.Auditories as List<SelectListItem>)
-                    {
-                        <option value="@a.Value">@a.Text</option>
-                    }
-                </select>
-            </div>
-            <div class="modal-row">
                 <label style="width:200px" for="createBuilding">Здание</label>
                 <select id="createBuilding" name="ZDANIE" required>
                     <option value="">Выберите здание</option>
@@ -425,6 +414,12 @@
                     {
                         <option value="@item.Value">@item.Text</option>
                     }
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createAud">Аудитория</label>
+                <select id="createAud" name="AUDITORIYA" disabled required>
+                    <option value="">Выберите аудиторию</option>
                 </select>
             </div>
             <div class="modal-row">
@@ -503,7 +498,38 @@
 @*                                    Добавление строки *@
 
 <script>
-        document.getElementById('transferForm').addEventListener('submit', async function (e) {
+    // Добавление новой даты
+    function addDateInput() {
+        const container = document.getElementById('dateInputs');
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.className = 'extra-date';
+        container.appendChild(document.createElement('br'));
+        container.appendChild(input);
+        updateParityOnDateInput();
+    }
+
+    // Если вводятся даты вручную → сбрасываем чётность
+    function updateParityOnDateInput() {
+        document.querySelectorAll('.extra-date').forEach(input => {
+            input.addEventListener('input', () => {
+                const paritySelect = document.getElementById('paritySelect');
+                if (paritySelect.value !== "") {
+                    paritySelect.value = "";
+                }
+            });
+        });
+    }
+
+    // Если пользователь выбирает чётность → удаляем все введённые даты
+    document.getElementById('paritySelect').addEventListener('change', () => {
+        const dateContainer = document.getElementById('dateInputs');
+        dateContainer.innerHTML = '<input type="date" class="extra-date" />';
+        updateParityOnDateInput(); // Повесить обработчик на новый input
+    });
+
+    // Сабмит формы
+    document.getElementById('transferForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const parity = document.getElementById('paritySelect').value;
@@ -525,7 +551,13 @@
             return monthA !== monthB ? monthA - monthB : dayA - dayB;
         });
 
-        const combined = [parity, ...uniqueDates].join(', ').trim().replace(/^,|,$/, '');
+        let combined = '';
+        if (parity) {
+            combined = parity;
+        } else if (uniqueDates.length > 0) {
+            combined = uniqueDates.join(', ');
+        }
+
         document.getElementById('hiddenDataField').value = combined;
         console.log("=> Сформированное DATA:", combined);
 
@@ -559,6 +591,9 @@
             alert("Ошибка при добавлении: " + errorText);
         }
     });
+
+    // Инициализация: повесить обработчик на первый input при загрузке
+    updateParityOnDateInput();
 </script>
 
 @*                                    Для обновления вывода расписания *@
@@ -588,6 +623,37 @@
     document.getElementById('yearSelect').addEventListener('change', updateSchedule);
 </script>
 
+@*                                    а *@
+
+<script>
+    document.getElementById('createBuilding').addEventListener('change', async function () {
+        const buildingSelect = this;
+        const selectedBuilding = buildingSelect.value;
+        const audSelect = document.getElementById('createAud');
+
+        // Очистить и отключить селект аудиторий
+        audSelect.innerHTML = '<option value="">Выберите аудиторию</option>';
+        audSelect.disabled = true;
+
+        if (!selectedBuilding) return;
+
+        try {
+            const response = await fetch(`/SchedulerNPubl/GetAuditoriesByBuilding?buildingName=${encodeURIComponent(selectedBuilding)}`);
+            const auditories = await response.json();
+
+            auditories.forEach(a => {
+                const option = document.createElement('option');
+                option.value = a.value;
+                option.textContent = a.text;
+                audSelect.appendChild(option);
+            });
+
+            audSelect.disabled = false;
+        } catch (error) {
+            console.error('Ошибка загрузки аудиторий:', error);
+        }
+    });
+</script>
 
 @*                                     В Ы В О Д    Р А С П И С А Н И Я *@
 
