@@ -49,7 +49,6 @@ namespace SchedulerV4.Controllers
                 })
                 .ToList();
             ViewBag.GroupList = groups;
-            ViewBag.Groups = groups;
 
             // Справочники
             ViewBag.Disciplins = _context.DISCIPLINES
@@ -124,20 +123,6 @@ namespace SchedulerV4.Controllers
             return View(orderedSchedule);
         }
 
-        public IActionResult GetScheduleTable(int groupId)
-        {
-            var schedule = _context.SHEDULE_N_PUBL
-                .Where(s => s.GROUPNO == groupId)
-                .Include(s => s.Discipline)
-                .OrderBy(s => s.DEN_POS)
-                .ThenBy(s => s.TIME_POS)
-                .ToList();
-
-            Console.WriteLine($"[DEBUG] Таблица для groupId={groupId}, количество записей: {schedule.Count}");
-
-            return PartialView("ScheduleTable", schedule);
-        }
-
         // POST: Create
         [HttpPost]
         public async Task<IActionResult> Create(ScheduleNPublEntity schedule)
@@ -145,18 +130,17 @@ namespace SchedulerV4.Controllers
             // Генерация нового ID
             int maxId = _context.SHEDULE_N_PUBL.Count() > 0 ? _context.SHEDULE_N_PUBL.Max(s => s.LESSON_ID) : 0;
             schedule.LESSON_ID = maxId + 1;
+
             // Заполнение GROUPID по GROUPNO
             var group = _context.GROUPS.AsEnumerable().FirstOrDefault(g => g.GROUPNO == schedule.GROUPNO);
             schedule.GROUPID = group?.GROUPID ?? 0;
-            string b = schedule.DEN;
-
+            
             // Получение ID аудитории и здания, если необходимо по имени
             var aud = _context.SPR_AUDITORY
     .AsEnumerable()
     .FirstOrDefault(a => a.NOMER.Trim().Equals(schedule.AUDITORIYA?.Trim(), StringComparison.InvariantCultureIgnoreCase));
             schedule.AUDITORY_ID = aud?.ID_AUDITORY ?? 0;
             var zdan = _context.SPR_BUILDING.AsEnumerable().FirstOrDefault(z => z.NAME == schedule.ZDANIE);
-            //schedule.AUDITORY_ID = aud?.ID_AUDITORY ?? 0;
             schedule.BUILDING_ID = zdan?.ID_BUILDING ?? 0;
 
             // Получение ID преподавателя, если возможно
@@ -171,8 +155,6 @@ namespace SchedulerV4.Controllers
 
             // Значения по умолчанию для GUIDE
             schedule.NUM_DISCIPL_GUIDE = 1;
-            schedule.YEARF = 2025;
-            schedule.SEMESTR = 2;
 
             try
             {
@@ -184,7 +166,6 @@ namespace SchedulerV4.Controllers
             {
                 return StatusCode(500); // Ошибка
             }
-            return RedirectToAction(nameof(Index));
         }
 
         // Вспомогательные методы

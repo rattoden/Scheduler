@@ -37,7 +37,7 @@
     }
 
     label {
-        font-size: 17px;
+        font-size: 15px;
         color: #555;
         width: auto;
     }
@@ -45,7 +45,7 @@
     select {
         width: 350px;
         height: 50px;
-        font-size: 17px;
+        font-size: 15px;
         padding: 0 15px;
         border: 2px solid #ddd;
         border-radius: 8px;
@@ -67,15 +67,16 @@
         }
 
     button {
-        font-size: 17px;
-        height: 44px;
-        padding: 0 25px;
+        font-size: 14px;
+        height: 48px;
         background: #0088CE;
         color: white;
         border: none;
         border-radius: 6px;
         cursor: pointer;
         width: auto;
+        text-align: center;
+        padding: 5px 10px;
     }
 
         button:hover {
@@ -87,13 +88,6 @@
         border-collapse: collapse;
         background: white;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    th, td {
-        border: 1px solid #ddd;
-        padding: 10px;
-        text-align: center;
-        font-size: 12px;
     }
 
     th {
@@ -305,7 +299,7 @@
             }
         }
     </select>
-    <button type="button" id="showScheduleBtn" style="width:300px">Показать расписание</button>
+    @* <button type="button" id="showScheduleBtn" style="width:300px">Показать расписание</button> *@
 </div>
 <script>
     document.getElementById('showScheduleBtn').addEventListener('click', () => {
@@ -326,20 +320,6 @@
     });
 </script>
 
-@*                                    В Ы В О Д     О Ш И Б К И *@
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <strong>Успешно!</strong> @TempData["SuccessMessage"]
-    </div>
-}
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong>Ошибка!</strong> @TempData["ErrorMessage"]
-    </div>
-}
 @if (ViewBag.ShowAddButton == true)
 {
     <button type="button" id="openCreateModalBtn">Добавить занятие</button>
@@ -353,10 +333,6 @@
             @if (filteredGroupNo.HasValue)
             {
                 <text>@filteredGroupNo</text>
-            }
-            else
-            {
-                <text></text>
             }
         </div>
         <form id="transferForm">
@@ -445,15 +421,9 @@
                     }
                 </select>
             </div>
-            <div class="modal-row">
-                <label style="width:200px" for="createType">Тип занятия</label>
-                <select id="createType" name="TIP" required>
-                    <option value="">Выберите тип занятия</option>
-                    <option value="1">дневное</option>
-                    <option value="2">экзамен</option>
-                    <option value="3">заочное</option>
-                </select>
-            </div>
+            <input type="hidden" id="hiddenTip" name="TIP" />
+            <input type="hidden" id="hiddenSemester" name="SEMESTR" />
+            <input type="hidden" id="hiddenYear" name="YEARF" />
             <div class="modal-footer">
                 <button type="submit">Добавить</button>
                 <button type="button" id="cancelCreateBtn">Отмена</button>
@@ -469,6 +439,20 @@
     const createForm = document.getElementById('transferForm');
 
     openCreateModalBtn.addEventListener('click', () => {
+        const groupId = document.getElementById('groupSelect').value;
+        const tip = document.getElementById('tipSelect').value;
+        const semester = document.getElementById('semesterSelect').value;
+        const year = document.getElementById('yearSelect').value;
+
+        if (!groupId || !tip || !semester || !year) {
+            alert("Пожалуйста, выберите все фильтры: группу, тип занятия, семестр и год перед добавлением.");
+            return;
+        }
+
+        document.getElementById('hiddenTip').value = tip;
+        document.getElementById('hiddenSemester').value = semester;
+        document.getElementById('hiddenYear').value = year;
+
         createModal.style.display = 'flex';
     });
 
@@ -486,7 +470,7 @@
 </script>
 
 <script>
-    document.getElementById('transferForm').addEventListener('submit', async function (e) {
+        document.getElementById('transferForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const form = e.target;
@@ -497,22 +481,56 @@
             body: formData
         });
 
-        if (response.ok) {
-            const groupNo = formData.get("GROUPNO");
+            if (response.ok) {
+                alert("Занятие успешно добавлено!");
 
-            // Закрыть модалку
-            document.getElementById('createModal').style.display = 'none';
-            form.reset();
+                // Закрыть модалку
+                document.getElementById('createModal').style.display = 'none';
+                form.reset();
 
-    setTimeout(async () => {
-        const tableResponse = await fetch(`/SchedulerNPubl/GetScheduleTable?groupId=${groupNo}`);
-        const tableHtml = await tableResponse.text();
-        document.querySelector('table').outerHTML = tableHtml;
-    }, 200);
-        } else {
-            alert("Ошибка при добавлении!");
-        }
+                // Перенаправление с фильтрами
+                const groupId = document.getElementById('groupSelect').value;
+                const tip = document.getElementById('tipSelect').value;
+                const semester = document.getElementById('semesterSelect').value;
+                const year = document.getElementById('yearSelect').value;
+
+                const params = new URLSearchParams();
+                if (groupId) params.append('groupId', groupId);
+                if (tip) params.append('tip', tip);
+                if (semester) params.append('semester', semester);
+                if (year) params.append('year', year);
+
+                window.location.href = `/SchedulerNPubl/Index${params.toString() ? '?' + params.toString() : ''}`;
+            } 
+            else {
+                const errorText = await response.text();
+                alert("Ошибка при добавлении: " + errorText);
+            }
     });
+</script>
+<script>
+    function updateSchedule() {
+        const groupId = document.getElementById('groupSelect').value;
+        const tip = document.getElementById('tipSelect').value;
+        const semester = document.getElementById('semesterSelect').value;
+        const year = document.getElementById('yearSelect').value;
+
+        const params = new URLSearchParams();
+
+        if (groupId) params.append('groupId', groupId);
+        if (tip) params.append('tip', tip);
+        if (semester) params.append('semester', semester);
+        if (year) params.append('year', year);
+
+        const query = params.toString();
+        window.location.href = `/SchedulerNPubl/Index${query ? '?' + query : ''}`;
+    }
+
+    // Назначение обработчиков на все селекты
+    document.getElementById('groupSelect').addEventListener('change', updateSchedule);
+    document.getElementById('tipSelect').addEventListener('change', updateSchedule);
+    document.getElementById('semesterSelect').addEventListener('change', updateSchedule);
+    document.getElementById('yearSelect').addEventListener('change', updateSchedule);
 </script>
 
 @*                                     В Ы В О Д    Р А С П И С А Н И Я *@
