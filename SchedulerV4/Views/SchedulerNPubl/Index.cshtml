@@ -540,28 +540,47 @@
     document.getElementById('yearSelect').addEventListener('change', updateSchedule);
 </script>
 
-@*                                    а *@
+@*                                    Занятость аудиторий *@
 
 <script>
-    document.getElementById('createBuilding').addEventListener('change', async function () {
-        const buildingSelect = this;
-        const selectedBuilding = buildingSelect.value;
+        document.getElementById('createBuilding').addEventListener('change', loadAuditories);
+
+    async function loadAuditories() {
+        const building = document.getElementById('createBuilding').value;
+        const day = document.querySelector("select[name='DEN']").value;
+        const time = document.querySelector("select[name='VREM']").value;
+        const semester = document.getElementById('semesterSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const parity = document.getElementById('paritySelect').value;
         const audSelect = document.getElementById('createAud');
 
-        // Очистить и отключить селект аудиторий
         audSelect.innerHTML = '<option value="">Выберите аудиторию</option>';
         audSelect.disabled = true;
 
-        if (!selectedBuilding) return;
+        if (!building || !day || !time || !semester || !year || !parity)
+            return;
 
         try {
-            const response = await fetch(`/SchedulerNPubl/GetAuditoriesByBuilding?buildingName=${encodeURIComponent(selectedBuilding)}`);
-            const auditories = await response.json();
+            const response = await fetch(`/SchedulerNPubl/GetAuditoriesByBuilding?` +
+                `buildingName=${encodeURIComponent(building)}` +
+                `&day=${encodeURIComponent(day)}` +
+                `&time=${encodeURIComponent(time)}` +
+                `&semester=${semester}` +
+                `&year=${year}` +
+                `&parity=${encodeURIComponent(parity)}`);
 
-            auditories.forEach(a => {
+            const data = await response.json();
+
+            data.forEach(a => {
                 const option = document.createElement('option');
                 option.value = a.value;
                 option.textContent = a.text;
+
+                if (a.busy) {
+                    option.style.color = 'red';
+                    option.disabled = true;
+                }
+
                 audSelect.appendChild(option);
             });
 
@@ -569,8 +588,16 @@
         } catch (error) {
             console.error('Ошибка загрузки аудиторий:', error);
         }
-    });
+    }
+
+    // Перегружаем аудитории при изменении любых параметров, включая parity
+    document.querySelector("select[name='DEN']").addEventListener('change', loadAuditories);
+    document.querySelector("select[name='VREM']").addEventListener('change', loadAuditories);
+    document.getElementById('semesterSelect').addEventListener('change', loadAuditories);
+    document.getElementById('yearSelect').addEventListener('change', loadAuditories);
+    document.getElementById('paritySelect').addEventListener('change', loadAuditories);
 </script>
+
 
 @*                                     Даты *@
 

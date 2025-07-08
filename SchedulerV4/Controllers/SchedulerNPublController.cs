@@ -144,6 +144,43 @@ namespace SchedulerV4.Controllers
             var trimmed = input.Trim();
             return System.Text.RegularExpressions.Regex.Replace(trimmed, @"\s+", " ");
         }
+        private bool IsParityConflict(string existingData, string newData)
+        {
+            existingData = existingData?.Trim().ToLower() ?? "";
+            newData = newData?.Trim().ToLower() ?? "";
+
+            bool existingIsRange = existingData == "чет" || existingData == "неч" || existingData == "чет/неч";
+            bool newIsRange = newData == "чет" || newData == "неч" || newData == "чет/неч";
+
+            bool existingIsDates = !existingIsRange && !string.IsNullOrEmpty(existingData);
+            bool newIsDates = !newIsRange && !string.IsNullOrEmpty(newData);
+
+            // Если один из них - диапазон (чет/неч), а другой - конкретные даты — конфликт
+            if ((existingIsRange && newIsDates) || (existingIsDates && newIsRange))
+                return true;
+
+            // Если оба диапазоны — конфликт при пересечении чет/неч
+            if (existingIsRange && newIsRange)
+            {
+                if (existingData == "чет/неч" || newData == "чет/неч")
+                    return true;
+                if (existingData == newData)
+                    return true;
+                return false;
+            }
+
+            // Если оба конкретные даты — проверяем точное совпадение (можно усложнить, если нужно)
+            if (existingIsDates && newIsDates)
+            {
+                // Простая проверка на равенство строк с датами — считаем конфликтом, если совпадают
+                if (existingData == newData)
+                    return true;
+                return false;
+            }
+
+            // Если оба пустые или невалидные — считаем нет конфликта
+            return false;
+        }
 
         // POST: Create
         [HttpPost]
@@ -152,18 +189,17 @@ namespace SchedulerV4.Controllers
             if (input == null)
                 return BadRequest("Неверные данные.");
 
-            // Найти группу по номеру группы
             var group = await _context.GROUPS.FirstOrDefaultAsync(g => g.GROUPNO == input.GROUPNO);
             if (group == null)
                 return BadRequest("Группа не найдена.");
 
             input.GROUPID = group.GROUPID;
 
-            // Очистка полей для сравнения
             string trimmedDen = CleanString(input.DEN?.ToLower());
             string trimmedVrem = CleanString(input.VREM);
             string trimmedAud = CleanString(input.AUDITORIYA?.ToLower());
             string trimmedZdan = CleanString(input.ZDANIE?.ToLower());
+            string trimmedData = CleanString(input.DATA?.ToLower());
 
             int semestr = input.SEMESTR;
             int yearf = input.YEARF;
@@ -175,17 +211,19 @@ namespace SchedulerV4.Controllers
 
             var groupConflictEntry = groupSchedules.FirstOrDefault(s =>
                 CleanString(s.DEN?.ToLower()) == trimmedDen &&
-                CleanString(s.VREM) == trimmedVrem);
+                CleanString(s.VREM) == trimmedVrem &&
+                IsParityConflict(CleanString(s.DATA), trimmedData));
 
             if (groupConflictEntry != null)
             {
                 var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == groupConflictEntry.DISCIPL_NUM);
-                string disciplineName = CleanString(discipline?.NAME ?? "неизвестна");
+                string disciplineName = CleanString(discipline?.NAME ?? "");
 
-                string prepodName = CleanString(groupConflictEntry.PREPODAVATEL ?? "неизвестен");
-                string auditory = CleanString(groupConflictEntry.AUDITORIYA ?? "неизвестна");
+                string prepodName = CleanString(groupConflictEntry.PREPODAVATEL ?? "");
+                string auditory = CleanString(groupConflictEntry.AUDITORIYA ?? "");
                 int building = groupConflictEntry.BUILDING_ID;
                 string groupNo = CleanString(group.GROUPNO.ToString());
+                string conflictData = CleanString(groupConflictEntry.DATA ?? "");
 
                 return BadRequest($"У группы {groupNo} в это время есть занятие \"{disciplineName}\" у преподавателя {prepodName} в {auditory} аудитории {building} здания.");
             }
@@ -199,22 +237,26 @@ namespace SchedulerV4.Controllers
                 CleanString(s.DEN?.ToLower()) == trimmedDen &&
                 CleanString(s.VREM) == trimmedVrem &&
                 CleanString(s.ZDANIE?.ToLower()) == trimmedZdan &&
-                CleanString(s.AUDITORIYA?.ToLower()) == trimmedAud);
+                CleanString(s.AUDITORIYA?.ToLower()) == trimmedAud &&
+                IsParityConflict(CleanString(s.DATA), trimmedData));
 
             if (auditoryConflictEntry != null)
             {
                 var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == auditoryConflictEntry.DISCIPL_NUM);
-                string disciplineName = CleanString(discipline?.NAME ?? "неизвестна");
+                string disciplineName = CleanString(discipline?.NAME ?? "");
 
-                string prepodName = CleanString(auditoryConflictEntry.PREPODAVATEL ?? "неизвестен");
-                string groupNo = CleanString(_context.GROUPS.FirstOrDefault(g => g.GROUPID == auditoryConflictEntry.GROUPID)?.GROUPNO.ToString() ?? "неизвестна");
+                string prepodName = CleanString(auditoryConflictEntry.PREPODAVATEL ?? "");
+                string groupNo = CleanString(_context.GROUPS.FirstOrDefault(g => g.GROUPID == auditoryConflictEntry.GROUPID)?.GROUPNO.ToString() ?? "");
 
                 return BadRequest($"Эта аудитория в это время занята группой {groupNo}: дисциплина \"{disciplineName}\" у преподавателя {prepodName}.");
             }
 
             // --- Найти преподавателя ---
-            var prepod = await _context.SOTRUDNIK.FirstOrDefaultAsync(p =>
-                CleanString((p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME)) == CleanString(input.PREPODAVATEL));
+            var trimmedPrepodName = CleanString(input.PREPODAVATEL);
+            var prepod = _context.SOTRUDNIK
+                .AsEnumerable()
+                .FirstOrDefault(p =>
+                    CleanString($"{p.FIRSTNAME} {p.MIDDLENAME} {p.LASTNAME}") == trimmedPrepodName);
 
             if (prepod == null)
                 return BadRequest("Преподаватель не найден.");
@@ -230,15 +272,16 @@ namespace SchedulerV4.Controllers
 
             var teacherConflictEntry = teacherSchedules.FirstOrDefault(s =>
                 CleanString(s.DEN?.ToLower()) == trimmedDen &&
-                CleanString(s.VREM) == trimmedVrem);
+                CleanString(s.VREM) == trimmedVrem &&
+                IsParityConflict(CleanString(s.DATA), trimmedData));
 
             if (teacherConflictEntry != null)
             {
                 var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == teacherConflictEntry.DISCIPL_NUM);
-                string disciplineName = CleanString(discipline?.NAME ?? "неизвестна");
+                string disciplineName = CleanString(discipline?.NAME ?? "");
 
-                string groupNo = CleanString(_context.GROUPS.FirstOrDefault(g => g.GROUPID == teacherConflictEntry.GROUPID)?.GROUPNO.ToString() ?? "неизвестна");
-                string auditory = CleanString(teacherConflictEntry.AUDITORIYA ?? "неизвестна");
+                string groupNo = CleanString(_context.GROUPS.FirstOrDefault(g => g.GROUPID == teacherConflictEntry.GROUPID)?.GROUPNO.ToString() ?? "");
+                string auditory = CleanString(teacherConflictEntry.AUDITORIYA ?? "");
                 int building = teacherConflictEntry.BUILDING_ID;
 
                 return BadRequest($"У выбранного преподавателя уже есть занятие в это время с группой {groupNo} по дисциплине \"{disciplineName}\" в {auditory} аудитории {building} здания.");
@@ -246,8 +289,8 @@ namespace SchedulerV4.Controllers
 
             // --- Найти аудиторию ---
             var aud = _context.SPR_AUDITORY
-    .AsEnumerable() // Принудительно переносим выполнение в память
-    .FirstOrDefault(a => (a.NOMER ?? "").Trim().Equals(trimmedAud, StringComparison.InvariantCultureIgnoreCase));
+                .AsEnumerable()
+                .FirstOrDefault(a => (a.NOMER ?? "").Trim().Equals(trimmedAud, StringComparison.InvariantCultureIgnoreCase));
 
             input.AUDITORY_ID = aud?.ID_AUDITORY ?? 0;
 
@@ -277,10 +320,6 @@ namespace SchedulerV4.Controllers
                 return StatusCode(500, "Ошибка при сохранении занятия: " + ex.Message);
             }
         }
-
-
-
-
 
         // Вспомогательные методы
         private int GetDayPosition(string day)
@@ -315,25 +354,37 @@ namespace SchedulerV4.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAuditoriesByBuilding(string buildingName)
+        public IActionResult GetAuditoriesByBuilding(string buildingName, string day, string time, int semester, int year, string parity)
         {
             if (string.IsNullOrEmpty(buildingName))
-                return Json(new List<SelectListItem>());
+                return Json(new List<object>());
 
-            var auditories = _context.SPR_AUDITORY
-                .Where(a => _context.SPR_BUILDING
-                    .Count(b => b.NAME == buildingName && b.ID_BUILDING == a.ID_BUILDING) > 0)
-                .Select(a => new SelectListItem
-                {
-                    Value = a.NOMER,
-                    Text = a.NOMER
-                })
+            var allAuditories = _context.SPR_AUDITORY
+                .Where(a => _context.SPR_BUILDING.Any(b => b.NAME == buildingName && b.ID_BUILDING == a.ID_BUILDING))
                 .ToList();
 
-            return Json(auditories);
+            var busyAuditories = _context.SHEDULE_N_PUBL
+                .AsEnumerable()
+                .Where(s =>
+                    (s.ZDANIE ?? "").Trim().ToLower() == buildingName.Trim().ToLower() &&
+                    (s.DEN ?? "").Trim().ToLower() == day.Trim().ToLower() &&
+                    (s.VREM ?? "").Trim() == time.Trim() &&
+                    s.SEMESTR == semester &&
+                    s.YEARF == year &&
+                     IsParityConflict(s.DATA?.ToLower(), parity.ToLower()))
+                .Select(s => (s.AUDITORIYA ?? "").Trim().ToLower())
+                .ToHashSet();
+
+            var result = allAuditories.Select(a => new
+            {
+                value = a.NOMER,
+                text = busyAuditories.Contains((a.NOMER ?? "").Trim().ToLower())
+                    ? $"{a.NOMER} (занята)"
+                    : a.NOMER,
+                busy = busyAuditories.Contains((a.NOMER ?? "").Trim().ToLower())
+            });
+
+            return Json(result);
         }
     }
 }
-
-
-
