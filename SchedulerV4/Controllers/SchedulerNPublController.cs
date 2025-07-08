@@ -225,7 +225,7 @@ namespace SchedulerV4.Controllers
                 string groupNo = CleanString(group.GROUPNO.ToString());
                 string conflictData = CleanString(groupConflictEntry.DATA ?? "");
 
-                return BadRequest($"У группы {groupNo} в это время есть занятие \"{disciplineName}\" у преподавателя {prepodName} в {auditory} аудитории {building} здания.");
+                return BadRequest($"У этой группы в это время есть занятие \"{disciplineName}\" у преподавателя {prepodName} в {auditory} аудитории {building} здания.");
             }
 
             // --- Проверка конфликта по аудитории ---
@@ -363,25 +363,46 @@ namespace SchedulerV4.Controllers
                 .Where(a => _context.SPR_BUILDING.Any(b => b.NAME == buildingName && b.ID_BUILDING == a.ID_BUILDING))
                 .ToList();
 
-            var busyAuditories = _context.SHEDULE_N_PUBL
-                .AsEnumerable()
-                .Where(s =>
-                    (s.ZDANIE ?? "").Trim().ToLower() == buildingName.Trim().ToLower() &&
-                    (s.DEN ?? "").Trim().ToLower() == day.Trim().ToLower() &&
-                    (s.VREM ?? "").Trim() == time.Trim() &&
-                    s.SEMESTR == semester &&
-                    s.YEARF == year &&
-                     IsParityConflict(s.DATA?.ToLower(), parity.ToLower()))
-                .Select(s => (s.AUDITORIYA ?? "").Trim().ToLower())
-                .ToHashSet();
+            var busySchedulesRaw = _context.SHEDULE_N_PUBL
+    .Where(s =>
+        s.ZDANIE != null &&
+        s.DEN != null &&
+        s.VREM != null &&
+        s.SEMESTR == semester &&
+        s.YEARF == year)
+    .ToList(); // <-- сначала забрали все записи
 
-            var result = allAuditories.Select(a => new
+            var busySchedules = busySchedulesRaw
+                .Where(s =>
+                    s.ZDANIE.Trim().ToLower() == buildingName.Trim().ToLower() &&
+                    s.DEN.Trim().ToLower() == day.Trim().ToLower() &&
+                    s.VREM.Trim() == time.Trim() &&
+                    IsParityConflict((s.DATA ?? "").ToLower(), parity.ToLower()))
+                .ToList();
+
+            var busyAuditoriesInfo = busySchedules
+                .GroupBy(s => (s.AUDITORIYA ?? "").Trim().ToLower())
+                .ToDictionary(g => g.Key, g =>
+                {
+                    var s = g.First(); // Берем первое занятие
+                    var groupNo = _context.GROUPS.FirstOrDefault(gr => gr.GROUPID == s.GROUPID)?.GROUPNO.ToString() ?? "";
+                    var discipline = _context.DISCIPLINES.FirstOrDefault(d => d.ID == s.DISCIPL_NUM)?.NAME ?? "";
+                    var prepod = s.PREPODAVATEL ?? "";
+                    return $"Группа {groupNo}, дисциплина: \"{discipline}\", преподаватель: {prepod}";
+                });
+
+            var result = allAuditories.Select(a =>
             {
-                value = a.NOMER,
-                text = busyAuditories.Contains((a.NOMER ?? "").Trim().ToLower())
-                    ? $"{a.NOMER} (занята)"
-                    : a.NOMER,
-                busy = busyAuditories.Contains((a.NOMER ?? "").Trim().ToLower())
+                var audName = (a.NOMER ?? "").Trim();
+                var key = audName.ToLower();
+                var isBusy = busyAuditoriesInfo.ContainsKey(key);
+                return new
+                {
+                    value = audName,
+                    text = isBusy ? $"{audName} (занята)" : audName,
+                    busy = isBusy,
+                    tooltip = isBusy ? busyAuditoriesInfo[key] : ""
+                };
             });
 
             return Json(result);
