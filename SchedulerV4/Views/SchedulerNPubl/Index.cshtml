@@ -208,11 +208,6 @@
             padding: 10px 25px;
             font-size: 18px;
         }
-
-    #dateInputs input[type="date"] {
-        margin-bottom: 5px;
-        display: block;
-    }
 </style>
 
 <h1>Расписание занятий</h1>
@@ -264,6 +259,25 @@
         }
     </select>
 
+    <label for="yearSelect">Год:</label>
+    <select id="yearSelect" name="year">
+        <option value="">-- Выберите год --</option>
+        @{
+            int currentYear = DateTime.Now.Year;
+            for (int y = currentYear - 1; y <= currentYear + 1; y++)
+            {
+                if (ViewBag.SelectedYear?.ToString() == y.ToString())
+                {
+                    <option value="@y" selected>@y</option>
+                }
+                else
+                {
+                    <option value="@y">@y</option>
+                }
+            }
+        }
+    </select>
+
     <label for="semesterSelect">Семестр:</label>
     <select id="semesterSelect" name="semester">
         <option value="">-- Выберите семестр --</option>
@@ -282,25 +296,6 @@
         else
         {
             <option value="2">весенний</option>
-        }
-    </select>
-
-    <label for="yearSelect">Год:</label>
-    <select id="yearSelect" name="year">
-        <option value="">-- Выберите год --</option>
-        @{
-            int currentYear = DateTime.Now.Year;
-            for (int y = currentYear - 1; y <= currentYear + 1; y++)
-            {
-                if (ViewBag.SelectedYear?.ToString() == y.ToString())
-                {
-                    <option value="@y" selected>@y</option>
-                }
-                else
-                {
-                    <option value="@y">@y</option>
-                }
-            }
         }
     </select>
 </div>
@@ -344,24 +339,6 @@
         <form id="transferForm">
             <input type="hidden" id="createGroupNo" name="GROUPNO" value="@ViewBag.FilteredGroupNo" />
             <div class="modal-row">
-                <label style="width:200px" for="paritySelect">Четность</label>
-                <select id="paritySelect">
-                    <option value="">Выберите</option>
-                    <option value="чет/неч">чет/неч</option>
-                    <option value="чет">чет</option>
-                    <option value="неч">неч</option>
-                </select>
-            </div>
-            <div class="modal-row" id="datePickerRow">
-                <label style="width:200px">Доп. даты</label>
-                <div id="dateInputs" style="flex-grow:1;">
-                    <input type="date" class="extra-date" />
-                </div>
-                <button type="button" onclick="addDateInput()">+</button>
-            </div>
-            <!-- Скрытое поле для сохранения итогового значения -->
-            <input type="hidden" name="DATA" id="hiddenDataField" />
-            <div class="modal-row">
                 <label style="width:200px" for="createDay">День</label>
                 <select name="DEN" required>
                     <option value="">Выберите день</option>
@@ -371,6 +348,15 @@
                     <option value="чт">чт</option>
                     <option value="пт">пт</option>
                     <option value="сб">сб</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="paritySelect">Четность</label>
+                <select id="paritySelect" name="DATA" required>
+                    <option value="">Выберите</option>
+                    <option value="чет/неч">чет/неч</option>
+                    <option value="чет">чет</option>
+                    <option value="неч">неч</option>
                 </select>
             </div>
             <div class="modal-row">
@@ -482,99 +468,33 @@
     });
 </script>
 
-@*                                    Для дат *@
-
-<script>
-    function addDateInput() {
-        const container = document.getElementById('dateInputs');
-        const input = document.createElement('input');
-        input.type = 'date';
-        input.className = 'extra-date';
-        container.appendChild(document.createElement('br'));
-        container.appendChild(input);
-    }
-</script>
-
 @*                                    Добавление строки *@
 
 <script>
-    // Добавление новой даты
-    function addDateInput() {
-        const container = document.getElementById('dateInputs');
-        const input = document.createElement('input');
-        input.type = 'date';
-        input.className = 'extra-date';
-        container.appendChild(document.createElement('br'));
-        container.appendChild(input);
-        updateParityOnDateInput();
-    }
-
-    // Если вводятся даты вручную → сбрасываем чётность
-    function updateParityOnDateInput() {
-        document.querySelectorAll('.extra-date').forEach(input => {
-            input.addEventListener('input', () => {
-                const paritySelect = document.getElementById('paritySelect');
-                if (paritySelect.value !== "") {
-                    paritySelect.value = "";
-                }
-            });
-        });
-    }
-
-    // Если пользователь выбирает чётность → удаляем все введённые даты
-    document.getElementById('paritySelect').addEventListener('change', () => {
-        const dateContainer = document.getElementById('dateInputs');
-        dateContainer.innerHTML = '<input type="date" class="extra-date" />';
-        updateParityOnDateInput(); // Повесить обработчик на новый input
-    });
-
     // Сабмит формы
-    document.getElementById('transferForm').addEventListener('submit', async function (e) {
+        document.getElementById('transferForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const parity = document.getElementById('paritySelect').value;
-
-        const dates = Array.from(document.querySelectorAll('.extra-date'))
-            .map(input => input.value)
-            .filter(d => d !== '')
-            .map(d => {
-                const dateObj = new Date(d);
-                const day = String(dateObj.getDate()).padStart(2, '0');
-                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-                return `${day}.${month}`;
-            });
-
-        const uniqueDates = [...new Set(dates)];
-        uniqueDates.sort((a, b) => {
-            const [dayA, monthA] = a.split('.').map(Number);
-            const [dayB, monthB] = b.split('.').map(Number);
-            return monthA !== monthB ? monthA - monthB : dayA - dayB;
-        });
-
-        let combined = '';
-        if (parity) {
-            combined = parity;
-        } else if (uniqueDates.length > 0) {
-            combined = uniqueDates.join(', ');
+        if (!parity) {
+            alert("Пожалуйста, выберите четность.");
+            return;
         }
 
-        document.getElementById('hiddenDataField').value = combined;
-        console.log("=> Сформированное DATA:", combined);
-
         const form = e.target;
-            const formData = new FormData();
-    formData.append("GROUPNO", document.getElementById("createGroupNo").value);
-    formData.append("DEN", form.DEN.value);
-    formData.append("VREM", form.VREM.value);
-    formData.append("DATA", document.getElementById("hiddenDataField").value);
-    formData.append("DISCIPL_NUM", form.DISCIPL_NUM.value);
-    formData.append("FORM_ZAN", form.FORM_ZAN.value);
-    formData.append("ZDANIE", form.ZDANIE.value);
-    formData.append("AUDITORIYA", form.AUDITORIYA.value);
-    formData.append("PREPODAVATEL", form.PREPODAVATEL.value);
-    formData.append("TIP", document.getElementById("hiddenTip").value);
-    formData.append("SEMESTR", document.getElementById("hiddenSemester").value);
-    formData.append("YEARF", document.getElementById("hiddenYear").value);
+        const formData = new FormData();
+        formData.append("GROUPNO", document.getElementById("createGroupNo").value);
+        formData.append("DEN", form.DEN.value);
+        formData.append("VREM", form.VREM.value);
+        formData.append("DATA", parity); // <-- просто чётность
+        formData.append("DISCIPL_NUM", form.DISCIPL_NUM.value);
+        formData.append("FORM_ZAN", form.FORM_ZAN.value);
+        formData.append("ZDANIE", form.ZDANIE.value);
+        formData.append("AUDITORIYA", form.AUDITORIYA.value);
+        formData.append("PREPODAVATEL", form.PREPODAVATEL.value);
+        formData.append("TIP", document.getElementById("hiddenTip").value);
+        formData.append("SEMESTR", document.getElementById("hiddenSemester").value);
+        formData.append("YEARF", document.getElementById("hiddenYear").value);
 
         const response = await fetch('/SchedulerNPubl/Create', {
             method: 'POST',
@@ -585,27 +505,12 @@
             alert("Занятие успешно добавлено!");
             document.getElementById('createModal').style.display = 'none';
             form.reset();
-
-            const groupId = document.getElementById('groupSelect').value;
-            const tip = document.getElementById('tipSelect').value;
-            const semester = document.getElementById('semesterSelect').value;
-            const year = document.getElementById('yearSelect').value;
-
-            const params = new URLSearchParams();
-            if (groupId) params.append('groupId', groupId);
-            if (tip) params.append('tip', tip);
-            if (semester) params.append('semester', semester);
-            if (year) params.append('year', year);
-
-            window.location.href = `/SchedulerNPubl/Index${params.toString() ? '?' + params.toString() : ''}`;
+            updateSchedule();
         } else {
             const errorText = await response.text();
-            alert("Ошибка при добавлении: " + errorText);
+            alert("Ошибка: " + errorText);
         }
     });
-
-    // Инициализация: повесить обработчик на первый input при загрузке
-    updateParityOnDateInput();
 </script>
 
 @*                                    Для обновления вывода расписания *@
@@ -666,6 +571,108 @@
         }
     });
 </script>
+
+@*                                     Даты *@
+
+<script>
+    const paritySelect = document.getElementById("paritySelect");
+    const daySelect = document.querySelector("select[name='DEN']");
+    const semesterSelect = document.getElementById("semesterSelect");
+    const yearSelect = document.getElementById("yearSelect");
+
+    const dateOptionsByKey = {
+        // весенний 2024
+        "пн_весенний_2024": ["05.02", "04.03", "01.04", "06.05"],
+        "вт_весенний_2024": ["06.02", "05.03", "02.04", "07.05"],
+        "ср_весенний_2024": ["07.02", "06.03", "03.04", "08.05"],
+        "чт_весенний_2024": ["08.02", "07.03", "04.04", "09.05"],
+        "пт_весенний_2024": ["09.02", "08.03", "05.04", "10.05"],
+        "сб_весенний_2024": ["03.02", "02.03", "06.04", "04.05"],
+
+        // весенний 2025
+        "пн_весенний_2025": ["03.02", "03.03", "07.04", "05.05"],
+        "вт_весенний_2025": ["04.02", "04.03", "08.04", "06.05"],
+        "ср_весенний_2025": ["05.02", "05.03", "09.04", "07.05"],
+        "чт_весенний_2025": ["06.02", "06.03", "10.04", "08.05"],
+        "пт_весенний_2025": ["07.02", "07.03", "11.04", "09.05"],
+        "сб_весенний_2025": ["08.02", "08.03", "12.04", "10.05"],
+
+        // весенний 2026
+        "пн_весенний_2026": ["02.02", "02.03", "06.04", "04.05"],
+        "вт_весенний_2026": ["03.02", "03.03", "07.04", "05.05"],
+        "ср_весенний_2026": ["04.02", "04.03", "08.04", "06.05"],
+        "чт_весенний_2026": ["05.02", "05.03", "09.04", "07.05"],
+        "пт_весенний_2026": ["06.02", "06.03", "10.04", "08.05"],
+        "сб_весенний_2026": ["07.02", "07.03", "11.04", "09.05"],
+
+        // осенний 2024
+        "пн_осенний_2024": ["02.09", "07.10", "04.11", "02.12"],
+        "вт_осенний_2024": ["03.09", "08.10", "05.11", "03.12"],
+        "ср_осенний_2024": ["04.09", "09.10", "06.11", "04.12"],
+        "чт_осенний_2024": ["05.09", "10.10", "07.11", "05.12"],
+        "пт_осенний_2024": ["06.09", "11.10", "08.11", "06.12"],
+        "сб_осенний_2024": ["07.09", "12.10", "09.11", "07.12"],
+
+        // осенний 2025
+        "пн_осенний_2025": ["01.09", "06.10", "03.11", "01.12"],
+        "вт_осенний_2025": ["02.09", "07.10", "04.11", "02.12"],
+        "ср_осенний_2025": ["03.09", "08.10", "05.11", "03.12"],
+        "чт_осенний_2025": ["04.09", "09.10", "06.11", "04.12"],
+        "пт_осенний_2025": ["05.09", "10.10", "07.11", "05.12"],
+        "сб_осенний_2025": ["06.09", "11.10", "08.11", "06.12"],
+
+        // осенний 2026
+        "пн_осенний_2026": ["07.09", "05.10", "02.11", "07.12"],
+        "вт_осенний_2026": ["01.09", "06.10", "03.11", "08.12"],
+        "ср_осенний_2026": ["02.09", "07.10", "04.11", "09.12"],
+        "чт_осенний_2026": ["03.09", "08.10", "05.11", "10.12"],
+        "пт_осенний_2026": ["04.09", "09.10", "06.11", "11.12"],
+        "сб_осенний_2026": ["05.09", "10.10", "07.11", "12.12"]
+    };
+
+    function updateParityOptions() {
+        const day = daySelect.value.toLowerCase();
+        // Семестр: если value === "1" — осенний, иначе весенний
+        const semester = semesterSelect.value === "1" ? "осенний" : "весенний";
+        const year = yearSelect.value;
+
+        if (!day || !semester || !year) {
+            paritySelect.innerHTML = `<option value="">Выберите</option>`;
+            paritySelect.disabled = true;
+            return;
+        }
+
+        const key = `${day}_${semester}_${year}`;
+        const dates = dateOptionsByKey[key];
+
+        paritySelect.innerHTML = `
+            <option value="">Выберите</option>
+            <option value="чет/неч">чет/неч</option>
+            <option value="чет">чет</option>
+            <option value="неч">неч</option>
+        `;
+
+        if (dates && Array.isArray(dates)) {
+            const datesLine = dates.join(", ");
+            const opt = document.createElement("option");
+            opt.value = datesLine;
+            opt.textContent = datesLine;
+            paritySelect.appendChild(opt);
+            paritySelect.disabled = false;
+        } else {
+            paritySelect.disabled = true;
+        }
+    }
+
+    // Изначально блокируем select
+    paritySelect.disabled = true;
+
+    // Навесим обработчики, чтобы обновлять options при изменениях
+    daySelect.addEventListener("change", updateParityOptions);
+    semesterSelect.addEventListener("change", updateParityOptions);
+    yearSelect.addEventListener("change", updateParityOptions);
+</script>
+
 
 @*                                     В Ы В О Д    Р А С П И С А Н И Я *@
 

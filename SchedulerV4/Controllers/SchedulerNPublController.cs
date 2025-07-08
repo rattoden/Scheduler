@@ -137,6 +137,13 @@ namespace SchedulerV4.Controllers
             public int SEMESTR { get; set; }
             public int YEARF { get; set; }
         }
+        private string CleanString(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return "";
+            var trimmed = input.Trim();
+            return System.Text.RegularExpressions.Regex.Replace(trimmed, @"\s+", " ");
+        }
 
         // POST: Create
         [HttpPost]
@@ -146,19 +153,17 @@ namespace SchedulerV4.Controllers
                 return BadRequest("Неверные данные.");
 
             // Найти группу по номеру группы
-            var group = _context.GROUPS
-                .FirstOrDefault(g => g.GROUPNO == input.GROUPNO);
-
+            var group = await _context.GROUPS.FirstOrDefaultAsync(g => g.GROUPNO == input.GROUPNO);
             if (group == null)
                 return BadRequest("Группа не найдена.");
 
             input.GROUPID = group.GROUPID;
 
-            // Подготовка строк для сравнения
-            string trimmedDen = (input.DEN ?? "").Trim().ToLower();
-            string trimmedVrem = (input.VREM ?? "").Trim();
-            string trimmedAud = (input.AUDITORIYA ?? "").Trim().ToLower();
-            string trimmedZdan = (input.ZDANIE ?? "").Trim().ToLower();
+            // Очистка полей для сравнения
+            string trimmedDen = CleanString(input.DEN?.ToLower());
+            string trimmedVrem = CleanString(input.VREM);
+            string trimmedAud = CleanString(input.AUDITORIYA?.ToLower());
+            string trimmedZdan = CleanString(input.ZDANIE?.ToLower());
 
             int semestr = input.SEMESTR;
             int yearf = input.YEARF;
@@ -168,31 +173,48 @@ namespace SchedulerV4.Controllers
                 .Where(s => s.GROUPID == input.GROUPID && s.SEMESTR == semestr && s.YEARF == yearf)
                 .ToListAsync();
 
-            bool groupConflict = groupSchedules.Any(s =>
-                (s.DEN ?? "").Trim().ToLower() == trimmedDen &&
-                (s.VREM ?? "").Trim() == trimmedVrem);
+            var groupConflictEntry = groupSchedules.FirstOrDefault(s =>
+                CleanString(s.DEN?.ToLower()) == trimmedDen &&
+                CleanString(s.VREM) == trimmedVrem);
 
-            if (groupConflict)
-                return BadRequest("Ошибка: У выбранной группы уже есть занятие в это время, день, семестр и год.");
+            if (groupConflictEntry != null)
+            {
+                var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == groupConflictEntry.DISCIPL_NUM);
+                string disciplineName = CleanString(discipline?.NAME ?? "неизвестна");
+
+                string prepodName = CleanString(groupConflictEntry.PREPODAVATEL ?? "неизвестен");
+                string auditory = CleanString(groupConflictEntry.AUDITORIYA ?? "неизвестна");
+                int building = groupConflictEntry.BUILDING_ID;
+                string groupNo = CleanString(group.GROUPNO.ToString());
+
+                return BadRequest($"У группы {groupNo} в это время есть занятие \"{disciplineName}\" у преподавателя {prepodName} в {auditory} аудитории {building} здания.");
+            }
 
             // --- Проверка конфликта по аудитории ---
             var auditorySchedules = await _context.SHEDULE_N_PUBL
                 .Where(s => s.GROUPID != input.GROUPID && s.SEMESTR == semestr && s.YEARF == yearf)
                 .ToListAsync();
 
-            bool auditoryConflict = auditorySchedules.Any(s =>
-                (s.DEN ?? "").Trim().ToLower() == trimmedDen &&
-                (s.VREM ?? "").Trim() == trimmedVrem &&
-                (s.ZDANIE ?? "").Trim().ToLower() == trimmedZdan &&
-                (s.AUDITORIYA ?? "").Trim().ToLower() == trimmedAud);
+            var auditoryConflictEntry = auditorySchedules.FirstOrDefault(s =>
+                CleanString(s.DEN?.ToLower()) == trimmedDen &&
+                CleanString(s.VREM) == trimmedVrem &&
+                CleanString(s.ZDANIE?.ToLower()) == trimmedZdan &&
+                CleanString(s.AUDITORIYA?.ToLower()) == trimmedAud);
 
-            if (auditoryConflict)
-                return BadRequest("Ошибка: Эта аудитория в это время занята другой группой в данном семестре и году.");
+            if (auditoryConflictEntry != null)
+            {
+                var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == auditoryConflictEntry.DISCIPL_NUM);
+                string disciplineName = CleanString(discipline?.NAME ?? "неизвестна");
+
+                string prepodName = CleanString(auditoryConflictEntry.PREPODAVATEL ?? "неизвестен");
+                string groupNo = CleanString(_context.GROUPS.FirstOrDefault(g => g.GROUPID == auditoryConflictEntry.GROUPID)?.GROUPNO.ToString() ?? "неизвестна");
+
+                return BadRequest($"Эта аудитория в это время занята группой {groupNo}: дисциплина \"{disciplineName}\" у преподавателя {prepodName}.");
+            }
 
             // --- Найти преподавателя ---
-            var prepod = _context.SOTRUDNIK
-                .FirstOrDefault(p =>
-                    ((p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME) ?? "").Trim() == (input.PREPODAVATEL ?? "").Trim());
+            var prepod = await _context.SOTRUDNIK.FirstOrDefaultAsync(p =>
+                CleanString((p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME)) == CleanString(input.PREPODAVATEL));
 
             if (prepod == null)
                 return BadRequest("Преподаватель не найден.");
@@ -206,16 +228,26 @@ namespace SchedulerV4.Controllers
                 .Where(s => s.PREPOD_ID == input.PREPOD_ID && s.SEMESTR == semestr && s.YEARF == yearf)
                 .ToListAsync();
 
-            bool teacherConflict = teacherSchedules.Any(s =>
-                (s.DEN ?? "").Trim().ToLower() == trimmedDen &&
-                (s.VREM ?? "").Trim() == trimmedVrem);
+            var teacherConflictEntry = teacherSchedules.FirstOrDefault(s =>
+                CleanString(s.DEN?.ToLower()) == trimmedDen &&
+                CleanString(s.VREM) == trimmedVrem);
 
-            if (teacherConflict)
-                return BadRequest("Ошибка: У выбранного преподавателя уже есть занятие в это время, день, семестр и год.");
+            if (teacherConflictEntry != null)
+            {
+                var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == teacherConflictEntry.DISCIPL_NUM);
+                string disciplineName = CleanString(discipline?.NAME ?? "неизвестна");
+
+                string groupNo = CleanString(_context.GROUPS.FirstOrDefault(g => g.GROUPID == teacherConflictEntry.GROUPID)?.GROUPNO.ToString() ?? "неизвестна");
+                string auditory = CleanString(teacherConflictEntry.AUDITORIYA ?? "неизвестна");
+                int building = teacherConflictEntry.BUILDING_ID;
+
+                return BadRequest($"У выбранного преподавателя уже есть занятие в это время с группой {groupNo} по дисциплине \"{disciplineName}\" в {auditory} аудитории {building} здания.");
+            }
 
             // --- Найти аудиторию ---
             var aud = _context.SPR_AUDITORY
-                .FirstOrDefault(a => (a.NOMER ?? "").Trim().Equals(trimmedAud, StringComparison.InvariantCultureIgnoreCase));
+    .AsEnumerable() // Принудительно переносим выполнение в память
+    .FirstOrDefault(a => (a.NOMER ?? "").Trim().Equals(trimmedAud, StringComparison.InvariantCultureIgnoreCase));
 
             input.AUDITORY_ID = aud?.ID_AUDITORY ?? 0;
 
@@ -226,11 +258,7 @@ namespace SchedulerV4.Controllers
             input.BUILDING_ID = zdan?.ID_BUILDING ?? 0;
 
             // --- Генерация нового ID (LESSON_ID) ---
-            int maxId = _context.SHEDULE_N_PUBL
-                .Select(s => s.LESSON_ID)
-                .DefaultIfEmpty(0)
-                .Max();
-
+            int maxId = _context.SHEDULE_N_PUBL.Count() > 0 ? _context.SHEDULE_N_PUBL.Max(s => s.LESSON_ID) : 0;
             input.LESSON_ID = maxId + 1;
 
             // --- Заполнение позиций ---
