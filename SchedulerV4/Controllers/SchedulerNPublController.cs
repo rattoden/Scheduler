@@ -71,6 +71,12 @@ namespace SchedulerV4.Controllers
                     Value = b.NAME,
                     Text = b.NAME
                 }).ToList();
+            ViewBag.Buildings1 = _context.SPR_BUILDING
+    .Select(b => new SelectListItem
+    {
+        Value = b.NAME,
+        Text = b.NAME
+    }).ToList();
 
             ViewBag.Prepodavatels = _context.SOTRUDNIK
                 .Select(p => new SelectListItem
@@ -338,7 +344,7 @@ namespace SchedulerV4.Controllers
 
         private int GetTimePosition(string time)
         {
-            var order = new List<string> { "08:00", "09:40", "11:20", "13:30", "15:10", "16:50", "18:30" };
+            var order = new List<string> { "08:00", "09:40", "11:20", "13:30", "15:10", "16:50", "18:25", "20:00" };
             return order.IndexOf(time) + 1;
         }
 
@@ -355,6 +361,220 @@ namespace SchedulerV4.Controllers
 
         [HttpGet]
         public IActionResult GetAuditoriesByBuilding(string buildingName, string day, string time, int semester, int year, string parity)
+        {
+            if (string.IsNullOrEmpty(buildingName))
+                return Json(new List<object>());
+
+            var allAuditories = _context.SPR_AUDITORY
+                .Where(a => _context.SPR_BUILDING.Any(b => b.NAME == buildingName && b.ID_BUILDING == a.ID_BUILDING))
+                .ToList();
+
+            var busySchedulesRaw = _context.SHEDULE_N_PUBL
+    .Where(s =>
+        s.ZDANIE != null &&
+        s.DEN != null &&
+        s.VREM != null &&
+        s.SEMESTR == semester &&
+        s.YEARF == year)
+    .ToList(); // <-- сначала забрали все записи
+
+            var busySchedules = busySchedulesRaw
+                .Where(s =>
+                    s.ZDANIE.Trim().ToLower() == buildingName.Trim().ToLower() &&
+                    s.DEN.Trim().ToLower() == day.Trim().ToLower() &&
+                    s.VREM.Trim() == time.Trim() &&
+                    IsParityConflict((s.DATA ?? "").ToLower(), parity.ToLower()))
+                .ToList();
+
+            var busyAuditoriesInfo = busySchedules
+                .GroupBy(s => (s.AUDITORIYA ?? "").Trim().ToLower())
+                .ToDictionary(g => g.Key, g =>
+                {
+                    var s = g.First(); // Берем первое занятие
+                    var groupNo = _context.GROUPS.FirstOrDefault(gr => gr.GROUPID == s.GROUPID)?.GROUPNO.ToString() ?? "";
+                    var discipline = _context.DISCIPLINES.FirstOrDefault(d => d.ID == s.DISCIPL_NUM)?.NAME ?? "";
+                    var prepod = s.PREPODAVATEL ?? "";
+                    return $"Группа {groupNo}, дисциплина: \"{discipline}\", преподаватель: {prepod}";
+                });
+
+            var result = allAuditories.Select(a =>
+            {
+                var audName = (a.NOMER ?? "").Trim();
+                var key = audName.ToLower();
+                var isBusy = busyAuditoriesInfo.ContainsKey(key);
+                return new
+                {
+                    value = audName,
+                    text = isBusy ? $"{audName} (занята)" : audName,
+                    busy = isBusy,
+                    tooltip = isBusy ? busyAuditoriesInfo[key] : ""
+                };
+            });
+
+            return Json(result);
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetLessonDetailsAsync(int lessonId)
+        {
+            var lesson = await _context.SHEDULE_N_PUBL.FirstOrDefaultAsync(l => l.LESSON_ID == lessonId);
+            if (lesson == null)
+                return NotFound();
+
+            var group = await _context.GROUPS.FirstOrDefaultAsync(g => g.GROUPID == lesson.GROUPID);
+
+            return Json(new
+            {
+                lessonId = lesson.LESSON_ID,
+                groupId = lesson.GROUPID,
+                groupNo = group?.GROUPNO,
+                den = lesson.DEN,
+                vrem = lesson.VREM,
+                data = lesson.DATA,
+                zdanie = lesson.ZDANIE,
+                auditoriya = lesson.AUDITORIYA,
+                prepodavatel = lesson.PREPODAVATEL
+            });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create1(ScheduleNPublEntity input)
+        {
+            if (input == null)
+                return BadRequest("Неверные данные.");
+
+            var lesson = await _context.SHEDULE_N_PUBL.FirstOrDefaultAsync(s => s.LESSON_ID == input.LESSON_ID);
+            if (lesson == null)
+                return BadRequest("Занятие не найдено.");
+
+            var group = await _context.GROUPS.FirstOrDefaultAsync(g => g.GROUPNO == input.GROUPNO);
+            if (group == null)
+                return BadRequest("Группа не найдена.");
+
+            string trimmedDen = CleanString(input.DEN?.ToLower());
+            string trimmedData = CleanString(input.DATA?.ToLower());
+            string trimmedVrem = CleanString(input.VREM);
+            string trimmedAud = CleanString(input.AUDITORIYA?.ToLower());
+            string trimmedZdan = CleanString(input.ZDANIE?.ToLower());
+
+            int semestr = lesson.SEMESTR;
+            int yearf = lesson.YEARF;
+            int groupId = lesson.GROUPID;
+
+            // --- Проверка конфликта по группе ---
+            var groupSchedules = await _context.SHEDULE_N_PUBL
+                .Where(s => s.GROUPID == input.GROUPID && s.SEMESTR == semestr && s.YEARF == yearf && s.LESSON_ID != input.LESSON_ID)
+                .ToListAsync();
+
+            var groupConflictEntry = groupSchedules.FirstOrDefault(s =>
+                CleanString(s.DEN?.ToLower()) == trimmedDen &&
+                CleanString(s.VREM) == trimmedVrem &&
+                IsParityConflict(CleanString(s.DATA), trimmedData));
+
+            if (groupConflictEntry != null)
+            {
+                var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == groupConflictEntry.DISCIPL_NUM);
+                string disciplineName = CleanString(discipline?.NAME ?? "");
+
+                string prepodName = CleanString(groupConflictEntry.PREPODAVATEL ?? "");
+                string auditory = CleanString(groupConflictEntry.AUDITORIYA ?? "");
+                int building = groupConflictEntry.BUILDING_ID;
+                string groupNo = CleanString(group.GROUPNO.ToString());
+                string conflictData = CleanString(groupConflictEntry.DATA ?? "");
+
+                return BadRequest($"У этой группы в это время есть занятие \"{disciplineName}\" у преподавателя {prepodName} в {auditory} аудитории {building} здания.");
+            }
+
+            // --- Проверка конфликта по аудитории ---
+            var auditorySchedules = await _context.SHEDULE_N_PUBL
+                .Where(s => s.GROUPID != input.GROUPID && s.SEMESTR == semestr && s.YEARF == yearf)
+                .ToListAsync();
+
+            var auditoryConflictEntry = auditorySchedules.FirstOrDefault(s =>
+                CleanString(s.DEN?.ToLower()) == trimmedDen &&
+                CleanString(s.VREM) == trimmedVrem &&
+                CleanString(s.ZDANIE?.ToLower()) == trimmedZdan &&
+                CleanString(s.AUDITORIYA?.ToLower()) == trimmedAud &&
+                IsParityConflict(CleanString(s.DATA), trimmedData));
+
+            if (auditoryConflictEntry != null)
+            {
+                var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == auditoryConflictEntry.DISCIPL_NUM);
+                string disciplineName = CleanString(discipline?.NAME ?? "");
+
+                string prepodName = CleanString(auditoryConflictEntry.PREPODAVATEL ?? "");
+                string groupNo = CleanString(_context.GROUPS.FirstOrDefault(g => g.GROUPID == auditoryConflictEntry.GROUPID)?.GROUPNO.ToString() ?? "");
+
+                return BadRequest($"Эта аудитория в это время занята группой {groupNo}: дисциплина \"{disciplineName}\" у преподавателя {prepodName}.");
+            }
+
+            // --- Найти преподавателя ---
+            var trimmedPrepodName = CleanString(input.PREPODAVATEL);
+            var prepod = _context.SOTRUDNIK
+                .AsEnumerable()
+                .FirstOrDefault(p =>
+                    CleanString($"{p.FIRSTNAME} {p.MIDDLENAME} {p.LASTNAME}") == trimmedPrepodName);
+
+            if (prepod == null)
+                return BadRequest("Преподаватель не найден.");
+
+            input.PREPOD_ID = prepod.ID_SOTR;
+            input.TABNUM = prepod.TAB_NO ?? "NULL";
+            input.DOLZNOST = prepod.RANG ?? "NULL";
+
+            // --- Проверка конфликта по преподавателю ---
+            var teacherSchedules = await _context.SHEDULE_N_PUBL
+                .Where(s => s.PREPOD_ID == lesson.PREPOD_ID && s.SEMESTR == semestr && s.YEARF == yearf && s.LESSON_ID != input.LESSON_ID)
+                .ToListAsync();
+
+            var teacherConflictEntry = teacherSchedules.FirstOrDefault(s =>
+                CleanString(s.DEN?.ToLower()) == trimmedDen &&
+                CleanString(s.VREM) == trimmedVrem &&
+                IsParityConflict(CleanString(s.DATA), trimmedData));
+
+            if (teacherConflictEntry != null)
+            {
+                var discipline = await _context.DISCIPLINES.FirstOrDefaultAsync(d => d.ID == teacherConflictEntry.DISCIPL_NUM);
+                string disciplineName = CleanString(discipline?.NAME ?? "");
+
+                string groupNo = CleanString(_context.GROUPS.FirstOrDefault(g => g.GROUPID == teacherConflictEntry.GROUPID)?.GROUPNO.ToString() ?? "");
+                string auditory = CleanString(teacherConflictEntry.AUDITORIYA ?? "");
+                int building = teacherConflictEntry.BUILDING_ID;
+
+                return BadRequest($"У выбранного преподавателя уже есть занятие в это время с группой {groupNo} по дисциплине \"{disciplineName}\" в {auditory} аудитории {building} здания.");
+            }
+
+            // --- Найти аудиторию ---
+            var aud = _context.SPR_AUDITORY
+                .AsEnumerable()
+                .FirstOrDefault(a => (a.NOMER ?? "").Trim().Equals(trimmedAud, StringComparison.InvariantCultureIgnoreCase));
+            lesson.AUDITORY_ID = aud?.ID_AUDITORY ?? 0;
+
+            // --- Найти здание ---
+            var zdan = _context.SPR_BUILDING
+                .FirstOrDefault(z => (z.NAME ?? "").Trim().ToLower() == trimmedZdan);
+            lesson.BUILDING_ID = zdan?.ID_BUILDING ?? 0;
+
+            lesson.DEN = input.DEN;
+            lesson.VREM = input.VREM;
+            lesson.DATA = input.DATA;
+            lesson.ZDANIE = input.ZDANIE;
+            lesson.AUDITORIYA = input.AUDITORIYA;
+
+            // Обновляем позиции
+            lesson.DEN_POS = GetDayPosition(input.DEN);
+            lesson.TIME_POS = GetTimePosition(input.VREM);
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Ошибка при сохранении изменений: " + ex.Message);
+            }
+        }
+        [HttpGet]
+        public IActionResult GetAuditoriesByBuilding1(string buildingName, string day, string time, int semester, int year, string parity)
         {
             if (string.IsNullOrEmpty(buildingName))
                 return Json(new List<object>());

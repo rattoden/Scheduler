@@ -299,28 +299,20 @@
         }
     </select>
 </div>
-
-@*                                    Кнопка Добавить при выборе группы *@
-
+<input type="hidden" id="groupSelect1" name="groupId1" />
+<input type="hidden" id="tipSelect1" name="tip1" />
+<input type="hidden" id="yearSelect1" name="year1" />
+<input type="hidden" id="semesterSelect1" name="semester1" />
 <script>
-    document.getElementById('showScheduleBtn').addEventListener('click', () => {
-        const groupId = document.getElementById('groupSelect').value;
-        const tip = document.getElementById('tipSelect').value;
-        const semester = document.getElementById('semesterSelect').value;
-        const year = document.getElementById('yearSelect').value;
-
-        const params = new URLSearchParams();
-
-        if (groupId) params.append('groupId', groupId);
-        if (tip) params.append('tip', tip);
-        if (semester) params.append('semester', semester);
-        if (year) params.append('year', year);
-
-        const query = params.toString();
-        window.location.href = `/SchedulerNPubl/Index${query ? '?' + query : ''}`;
-    });
+    function syncHiddenFilters() {
+        document.getElementById('groupSelect1').value = document.getElementById('groupSelect').value;
+        document.getElementById('tipSelect1').value = document.getElementById('tipSelect').value;
+        document.getElementById('yearSelect1').value = document.getElementById('yearSelect').value;
+        document.getElementById('semesterSelect1').value = document.getElementById('semesterSelect').value;
+    }
+    // И вызвать сразу для начальной установки
+    syncHiddenFilters();
 </script>
-
 @if (ViewBag.ShowAddButton == true)
 {
     <button type="button" id="openCreateModalBtn">Добавить занятие</button>
@@ -351,9 +343,9 @@
                 </select>
             </div>
             <div class="modal-row">
-                <label style="width:200px" for="paritySelect">Четность</label>
+                <label style="width:200px" for="paritySelect">Четность / Дата</label>
                 <select id="paritySelect" name="DATA" required>
-                    <option value="">Выберите</option>
+                    <option value="">Выберите четность / дату</option>
                     <option value="чет/неч">чет/неч</option>
                     <option value="чет">чет</option>
                     <option value="неч">неч</option>
@@ -444,7 +436,7 @@
         const year = document.getElementById('yearSelect').value;
 
         if (!groupId || !tip || !semester || !year) {
-            alert("Пожалуйста, выберите все фильтры: группу, тип занятия, семестр и год перед добавлением.");
+            alert("Пожалуйста, выберите все фильтры: группу, тип занятия, год и семестр перед добавлением.");
             return;
         }
 
@@ -603,10 +595,10 @@
 @*                                     Даты *@
 
 <script>
-    const paritySelect = document.getElementById("paritySelect");
-    const daySelect = document.querySelector("select[name='DEN']");
-    const semesterSelect = document.getElementById("semesterSelect");
-    const yearSelect = document.getElementById("yearSelect");
+    let paritySelect = document.getElementById("paritySelect");
+    let daySelect = document.querySelector("select[name='DEN']");
+    let semesterSelect = document.getElementById("semesterSelect");
+    let yearSelect = document.getElementById("yearSelect");
 
     const dateOptionsByKey = {
         // весенний 2024
@@ -749,7 +741,9 @@
                 <td>@(item.TIP == 1 ? "дневное" : (item.TIP == 2 ? "экзамен" : "заочное"))</td>
                 <td>@item.YEARF</td>
                 <td>@(item.SEMESTR == 1 ? "осенний" : "весенний")</td>
-                <td><button class="transferBtn">Перенести</button></td>
+                <td>
+                    <button type="button" class="openCreateModalBtn1" data-group="@item.LESSON_ID">Перенести</button>
+                </td>
                 <td>
                     <form asp-action="Delete" method="post" style="display:inline;">
                         <input type="hidden" name="ID" value="@item.LESSON_ID" />
@@ -764,3 +758,436 @@
         }
     </tbody>
 </table>
+
+@*                                    П Е Р Е Н О С   О К Н О *@
+
+<div class="modal" id="createModal1">
+    <div class="modal-content">
+        <div class="modal-header">
+            Перенос занятия группе номер
+            @if (filteredGroupNo.HasValue)
+            {
+                <text>@filteredGroupNo</text>
+            }
+        </div>
+        <form id="transferForm1" asp-action="Create1" method="post">
+            <input type="hidden" id="lessonIdHidden1" name="LESSON_ID" />
+            <input type="hidden" id="hiddenGroupId1" name="GROUPID" />
+            <input type="hidden" id="createGroupNo1" name="GROUPNO" />
+            <input type="hidden" id="hiddenPrepod1" name="PREPODAVATEL" />
+            <input type="hidden" id="hiddenTip1" name="TIP" />
+            <input type="hidden" id="hiddenSemester1" name="SEMESTR" />
+            <input type="hidden" id="hiddenYear1" name="YEARF" />
+            <input type="hidden" id="createGroupNo1" name="GROUPNO" value="@ViewBag.FilteredGroupNo" />
+            <div class="modal-row">
+                <label style="width:200px" for="createDay1">День</label>
+                <select id="createDay1" name="DEN" required>
+                    <option value="">Выберите день</option>
+                    <option value="пн">пн</option>
+                    <option value="вт">вт</option>
+                    <option value="ср">ср</option>
+                    <option value="чт">чт</option>
+                    <option value="пт">пт</option>
+                    <option value="сб">сб</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="paritySelect1">Четность / Дата</label>
+                <select id="paritySelect1" name="DATA" required>
+                    <option value="">Выберите четность / дату</option>
+                    <option value="чет/неч">чет/неч</option>
+                    <option value="чет">чет</option>
+                    <option value="неч">неч</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createTime1">Время</label>
+                <select id="createTime1" name="VREM" required>
+                    <option value="">Выберите время</option>
+                    <option value="08:00">08:00</option>
+                    <option value="09:40">09:40</option>
+                    <option value="11:20">11:20</option>
+                    <option value="13:30">13:30</option>
+                    <option value="15:10">15:10</option>
+                    <option value="16:50">16:50</option>
+                    <option value="18:25">18:25</option>
+                    <option value="20:00">20:00</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createBuilding1">Здание</label>
+                <select id="createBuilding1" name="ZDANIE" required>
+                    <option value="">Выберите здание</option>
+                    @foreach (var item in ViewBag.Buildings1 as List<SelectListItem>)
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="modal-row">
+                <label style="width:200px" for="createAud1">Аудитория</label>
+                <select id="createAud1" name="AUDITORIYA" required>
+                    <option value="">Выберите аудиторию</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="confirmCreateBtn1">Перенести</button>
+                <button type="button" id="cancelCreateBtn1">Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+@*                                   Открытие закрытие *@
+
+<script>
+        const createModal1 = document.getElementById('createModal1');
+        const cancelCreateBtn1 = document.getElementById('cancelCreateBtn1');
+        const createForm1 = document.getElementById('transferForm1');
+
+        // Открытие модального окна с загрузкой данных занятия
+    document.querySelectorAll('.openCreateModalBtn1').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const lessonId = btn.dataset.group;
+            const groupId = document.getElementById('groupSelect').value;
+            const tip = document.getElementById('tipSelect').value;
+            const semester = document.getElementById('semesterSelect').value;
+            const year = document.getElementById('yearSelect').value;
+
+            if (!groupId || !tip || !semester || !year) {
+                alert("Пожалуйста, выберите все фильтры: группу, тип занятия, год и семестр перед переносом.");
+                return;
+            }
+
+
+            try {
+                const response = await fetch(`/SchedulerNPubl/GetLessonDetails?lessonId=${lessonId}`);
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки данных');
+                }
+                const lesson = await response.json();
+                    console.log('lesson.groupNo =', lesson.groupNo);
+    console.log('lesson.groupId =', lesson.groupId);
+                if (!lesson) {
+                    alert("Не удалось загрузить данные занятия");
+                    return;
+                }
+
+                // Очищаем пробелы из данных
+                const denTrim = lesson.den?.trim() || '';
+                const vremTrim = lesson.vrem?.trim() || '';
+                const dataTrim = lesson.data?.trim() || '';
+                const zdanieTrim = lesson.zdanie?.trim() || '';
+                const auditoriyaTrim = lesson.auditoriya?.trim() || '';
+                const prepodTrim = lesson.prepodavatel?.trim() || '';
+                const groupIdReal = lesson.groupId || ''; // id группы из lesson
+
+                // Заполняем все скрытые поля
+    document.getElementById('lessonIdHidden1').value = lessonId;
+    document.getElementById('createGroupNo1').value = lesson.groupNo;          // GROUPNO ← номер группы
+    document.getElementById('hiddenGroupId1').value = lesson.groupId;          // GROUPID ← id группы
+    document.getElementById('hiddenPrepod1').value = prepodTrim;               // PREPODAVATEL
+    document.getElementById('hiddenTip1').value = tip;
+    document.getElementById('hiddenSemester1').value = semester;
+    document.getElementById('hiddenYear1').value = year;                  // YEARF
+
+                // Заполнение основных полей
+                document.getElementById('createDay1').value = denTrim;
+                document.getElementById('createTime1').value = vremTrim;
+                document.getElementById('paritySelect1').value = dataTrim;
+                document.getElementById('createBuilding1').value = zdanieTrim;
+
+                // Управление доступностью поля четности
+                const paritySelect = document.getElementById('paritySelect1');
+                paritySelect.disabled = denTrim === '';
+
+                // Открываем модальное окно
+                createModal1.style.display = 'flex';
+
+                // Загружаем аудитории, передавая выбранную аудиторию
+                setTimeout(() => loadAuditories1(auditoriyaTrim), 100);
+
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                alert("Ошибка загрузки данных занятия: " + error.message);
+            }
+        });
+    });
+
+        // Закрытие модального окна
+        cancelCreateBtn1.addEventListener('click', () => {
+            createModal1.style.display = 'none';
+            createForm1.reset();
+            // Сброс доступности поля четности при закрытии
+            document.getElementById('paritySelect1').disabled = true;
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === createModal1) {
+                createModal1.style.display = 'none';
+                createForm1.reset();
+                document.getElementById('paritySelect1').disabled = true;
+            }
+        });
+
+        // Обработчик изменения дня недели — разблокирует/блокирует поле четности и перезагружает аудитории
+        document.getElementById('createDay1').addEventListener('change', function () {
+            const paritySelect = document.getElementById('paritySelect1');
+            if (this.value === '') {
+                paritySelect.value = '';
+                paritySelect.disabled = true;
+            } else {
+                paritySelect.disabled = false;
+            }
+            // При смене дня сбрасываем аудиторию
+            resetAuditorySelect();
+            loadAuditories1();
+        });
+
+        // Обработчики изменения времени, здания, четности — сброс аудитории и загрузка новых данных
+        ['createTime1', 'createBuilding1', 'paritySelect1'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                resetAuditorySelect();
+                loadAuditories1();
+            });
+        });
+
+        // Функция сброса выбора аудитории на дефолтный вариант
+        function resetAuditorySelect() {
+            const audSelect = document.getElementById('createAud1');
+            audSelect.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Выберите аудиторию';
+            audSelect.appendChild(defaultOption);
+            audSelect.disabled = true;
+        }
+
+        // Функция загрузки аудиторий
+            async function loadAuditories1(selectedAud = '') {
+        const building = document.getElementById('createBuilding1').value.trim();
+        const day = document.getElementById('createDay1').value.trim();
+        const time = document.getElementById('createTime1').value.trim();
+        const semester = document.getElementById('semesterSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const parity = document.getElementById('paritySelect1').value.trim();
+        const audSelect = document.getElementById('createAud1');
+
+        // Если чего-то критически не хватает — выходим и сбрасываем
+        if (!building || !day || !time || !semester || !year || !parity) {
+            resetAuditorySelect();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/SchedulerNPubl/GetAuditoriesByBuilding1?` +
+                `buildingName=${encodeURIComponent(building)}` +
+                `&day=${encodeURIComponent(day)}` +
+                `&time=${encodeURIComponent(time)}` +
+                `&semester=${encodeURIComponent(semester)}` +
+                `&year=${encodeURIComponent(year)}` +
+                `&parity=${encodeURIComponent(parity)}`);
+
+            if (!response.ok) {
+                throw new Error('Ошибка сервера при загрузке аудиторий');
+            }
+
+            const data = await response.json();
+
+            // Сбрасываем и наполняем
+            audSelect.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Выберите аудиторию';
+            audSelect.appendChild(defaultOption);
+
+            let foundSelected = false;
+
+            data.forEach(a => {
+                const option = document.createElement('option');
+                option.value = a.value;
+                option.title = a.tooltip || "";
+                option.textContent = a.text;
+
+                if (a.busy) {
+                    option.style.color = 'red';
+                    option.disabled = true;
+                }
+
+                // Новый безопасный способ сравнить аудиторию
+                if (
+                    selectedAud &&
+                    a.value.toLowerCase().trim() === selectedAud.toLowerCase().trim()
+                ) {
+                    option.selected = true;
+                    foundSelected = true;
+                }
+
+                audSelect.appendChild(option);
+            });
+
+            audSelect.disabled = false;
+
+            // Если не нашли среди загруженных — ставим default
+            if (!foundSelected) {
+                audSelect.value = '';
+            }
+
+        } catch (error) {
+            console.error('Ошибка загрузки аудиторий:', error);
+            alert("Ошибка загрузки списка аудиторий: " + error.message);
+            resetAuditorySelect();
+        }
+    }
+
+        // --- Новый код для dateOptionsByKey1 и обновления paritySelect1 ---
+
+     let paritySelect2 = document.getElementById("paritySelect1");
+     let daySelect1 = document.getElementById("createDay1");
+     let semesterSelect2 = document.getElementById("semesterSelect1");
+     let yearSelect2 = document.getElementById("yearSelect1");
+
+        const dateOptionsByKey1 = {
+            // весенний 2024
+            "пн_весенний_2024": ["05.02", "04.03", "01.04", "06.05"],
+            "вт_весенний_2024": ["06.02", "05.03", "02.04", "07.05"],
+            "ср_весенний_2024": ["07.02", "06.03", "03.04", "08.05"],
+            "чт_весенний_2024": ["08.02", "07.03", "04.04", "09.05"],
+            "пт_весенний_2024": ["09.02", "08.03", "05.04", "10.05"],
+            "сб_весенний_2024": ["03.02", "02.03", "06.04", "04.05"],
+            // весенний 2025
+            "пн_весенний_2025": ["03.02", "03.03", "07.04", "05.05"],
+            "вт_весенний_2025": ["04.02", "04.03", "08.04", "06.05"],
+            "ср_весенний_2025": ["05.02", "05.03", "09.04", "07.05"],
+            "чт_весенний_2025": ["06.02", "06.03", "10.04", "08.05"],
+            "пт_весенний_2025": ["07.02", "07.03", "11.04", "09.05"],
+            "сб_весенний_2025": ["08.02", "08.03", "12.04", "10.05"],
+            // весенний 2026
+            "пн_весенний_2026": ["02.02", "02.03", "06.04", "04.05"],
+            "вт_весенний_2026": ["03.02", "03.03", "07.04", "05.05"],
+            "ср_весенний_2026": ["04.02", "04.03", "08.04", "06.05"],
+            "чт_весенний_2026": ["05.02", "05.03", "09.04", "07.05"],
+            "пт_весенний_2026": ["06.02", "06.03", "10.04", "08.05"],
+            "сб_весенний_2026": ["07.02", "07.03", "11.04", "09.05"],
+            // осенний 2024
+            "пн_осенний_2024": ["02.09", "07.10", "04.11", "02.12"],
+            "вт_осенний_2024": ["03.09", "08.10", "05.11", "03.12"],
+            "ср_осенний_2024": ["04.09", "09.10", "06.11", "04.12"],
+            "чт_осенний_2024": ["05.09", "10.10", "07.11", "05.12"],
+            "пт_осенний_2024": ["06.09", "11.10", "08.11", "06.12"],
+            "сб_осенний_2024": ["07.09", "12.10", "09.11", "07.12"],
+            // осенний 2025
+            "пн_осенний_2025": ["01.09", "06.10", "03.11", "01.12"],
+            "вт_осенний_2025": ["02.09", "07.10", "04.11", "02.12"],
+            "ср_осенний_2025": ["03.09", "08.10", "05.11", "03.12"],
+            "чт_осенний_2025": ["04.09", "09.10", "06.11", "04.12"],
+            "пт_осенний_2025": ["05.09", "10.10", "07.11", "05.12"],
+            "сб_осенний_2025": ["06.09", "11.10", "08.11", "06.12"],
+            // осенний 2026
+            "пн_осенний_2026": ["07.09", "05.10", "02.11", "07.12"],
+            "вт_осенний_2026": ["01.09", "06.10", "03.11", "08.12"],
+            "ср_осенний_2026": ["02.09", "07.10", "04.11", "09.12"],
+            "чт_осенний_2026": ["03.09", "08.10", "05.11", "10.12"],
+            "пт_осенний_2026": ["04.09", "09.10", "06.11", "11.12"],
+            "сб_осенний_2026": ["05.09", "10.10", "07.11", "12.12"]
+        };
+
+        function updateParityOptions1() {
+            if (!daySelect1 || !paritySelect2 || !semesterSelect2 || !yearSelect2) return;
+
+            const day = daySelect1.value.toLowerCase();
+            const semester = semesterSelect2.value === "1" ? "осенний" : "весенний";
+            const year = yearSelect2.value;
+
+            if (!day || !semester || !year) {
+                paritySelect2.innerHTML = `<option value="">Выберите</option>`;
+                paritySelect2.disabled = true;
+                paritySelect2.value = "";
+                return;
+            }
+
+            const key = `${day}_${semester}_${year}`;
+            const dates = dateOptionsByKey1[key];
+
+            paritySelect2.innerHTML = `
+                <option value="">Выберите четность / дату</option>
+                <option value="чет/неч">чет/неч</option>
+                <option value="чет">чет</option>
+                <option value="неч">неч</option>
+            `;
+
+            if (dates && Array.isArray(dates) && dates.length > 0) {
+                const datesLine = dates.join(", ");
+                const opt = document.createElement("option");
+                opt.value = datesLine;
+                opt.textContent = datesLine;
+                paritySelect2.appendChild(opt);
+                paritySelect2.disabled = false;
+            } else {
+                // Если дат нет, оставляем базовые опции и разблокируем поле
+                paritySelect2.disabled = false;
+            }
+
+            // Сбрасываем выбор, чтобы опция с датами появилась явно
+            paritySelect2.value = "";
+        }
+
+        // Изначально блокируем select четности
+        if (paritySelect2) paritySelect2.disabled = true;
+
+        // Навешиваем обработчики для обновления четности по изменению дня, семестра, года
+        if (daySelect1) daySelect1.addEventListener("change", updateParityOptions1);
+        if (semesterSelect2) semesterSelect2.addEventListener("change", updateParityOptions1);
+        if (yearSelect2) yearSelect2.addEventListener("change", updateParityOptions1);
+
+            const confirmCreateBtn1 = document.getElementById('confirmCreateBtn1');
+
+    confirmCreateBtn1.addEventListener('click', async () => {
+        const parity = document.getElementById('paritySelect1').value.trim();
+        const audSelect = document.getElementById('createAud1').value.trim();
+
+        if (!parity) {
+            alert("Пожалуйста, выберите четность занятия.");
+            return;
+        }
+
+        if (!audSelect) {
+            alert("Пожалуйста, выберите аудиторию.");
+            return;
+        }
+
+        const formData = new FormData(createForm1);
+
+        try {
+            const response = await fetch('/SchedulerNPubl/Create1', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                alert("Ошибка: " + errorText);
+                return;
+            }
+
+            // Закрываем модалку
+            createModal1.style.display = 'none';
+            createForm1.reset();
+
+            // Берем фильтры, чтобы вернуть их в index
+            const groupId = document.getElementById('groupSelect').value;
+            const tip = document.getElementById('tipSelect').value;
+            const semester = document.getElementById('semesterSelect').value;
+            const year = document.getElementById('yearSelect').value;
+
+            // Перенаправляем на Index с фильтрами
+            const url = `/SchedulerNPubl/Index?groupId=${encodeURIComponent(groupId)}&tip=${encodeURIComponent(tip)}&semester=${encodeURIComponent(semester)}&year=${encodeURIComponent(year)}`;
+            window.location.href = url;
+
+        } catch (error) {
+            console.error('Ошибка при переносе:', error);
+            alert("Не удалось перенести занятие: " + error.message);
+        }
+    });
+</script>
