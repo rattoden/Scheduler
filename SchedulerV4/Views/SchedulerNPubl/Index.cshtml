@@ -535,9 +535,39 @@
 @*                                    Занятость аудиторий *@
 
 <script>
-        document.getElementById('createBuilding').addEventListener('change', loadAuditories);
+    document.getElementById('createBuilding').addEventListener('change', async function () {
+        await loadAuditoriesWithoutBusy(); // Загружаем аудитории без занятости
+        await updateAuditoriesBusyStatus(); // Обновляем занятость при наличии всех данных
+    });
 
-    async function loadAuditories() {
+    async function loadAuditoriesWithoutBusy() {
+        const building = document.getElementById('createBuilding').value;
+        const audSelect = document.getElementById('createAud');
+
+        audSelect.innerHTML = '<option value="">Выберите аудиторию</option>';
+        audSelect.disabled = true;
+
+        if (!building) return;
+
+        try {
+            const response = await fetch(`/SchedulerNPubl/GetAuditoriesByBuilding?buildingName=${encodeURIComponent(building)}`);
+            const data = await response.json();
+
+            data.forEach(a => {
+                const option = document.createElement('option');
+                option.value = a.value;
+                option.textContent = a.text;
+                option.dataset.valueLower = a.value.toLowerCase(); // сохраняем для обновления занятости
+                audSelect.appendChild(option);
+            });
+
+            audSelect.disabled = false;
+        } catch (error) {
+            console.error('Ошибка загрузки аудиторий:', error);
+        }
+    }
+
+    async function updateAuditoriesBusyStatus() {
         const building = document.getElementById('createBuilding').value;
         const day = document.querySelector("select[name='DEN']").value;
         const time = document.querySelector("select[name='VREM']").value;
@@ -545,12 +575,9 @@
         const year = document.getElementById('yearSelect').value;
         const parity = document.getElementById('paritySelect').value;
         const audSelect = document.getElementById('createAud');
+        const teacherSelect = document.getElementById('createTeacher');
 
-        audSelect.innerHTML = '<option value="">Выберите аудиторию</option>';
-        audSelect.disabled = true;
-
-        if (!building || !day || !time || !semester || !year || !parity)
-            return;
+        if (!building || !day || !time || !semester || !year || !parity) return;
 
         try {
             const response = await fetch(`/SchedulerNPubl/GetAuditoriesByBuilding?` +
@@ -562,33 +589,191 @@
                 `&parity=${encodeURIComponent(parity)}`);
 
             const data = await response.json();
+            const options = audSelect.options;
 
-            data.forEach(a => {
-                const option = document.createElement('option');
-                option.value = a.value;
-                 option.title = a.tooltip || "";
-                option.textContent = a.text;
+            for (let i = 0; i < options.length; i++) {
+                const opt = options[i];
+                if (!opt.value) continue;
 
-                if (a.busy) {
-                    option.style.color = 'red';
-                    option.disabled = true;
+                const updated = data.find(d => d.value === opt.value);
+                if (updated?.busy) {
+                    opt.textContent = updated.text;
+                    opt.title = updated.tooltip || '';
+                    opt.style.color = 'red';
+                    opt.disabled = true;
+                } else {
+                    opt.textContent = updated?.text || opt.value;
+                    opt.title = '';
+                    opt.style.color = '';
+                    opt.disabled = false;
                 }
-
-                audSelect.appendChild(option);
-            });
-
-            audSelect.disabled = false;
+            }
         } catch (error) {
-            console.error('Ошибка загрузки аудиторий:', error);
+            console.error('Ошибка обновления занятости:', error);
         }
     }
 
-    // Перегружаем аудитории при изменении любых параметров, включая parity
-    document.querySelector("select[name='DEN']").addEventListener('change', loadAuditories);
-    document.querySelector("select[name='VREM']").addEventListener('change', loadAuditories);
-    document.getElementById('semesterSelect').addEventListener('change', loadAuditories);
-    document.getElementById('yearSelect').addEventListener('change', loadAuditories);
-    document.getElementById('paritySelect').addEventListener('change', loadAuditories);
+    // Обновление занятости при изменении других полей
+    const updateTriggers = ['DEN', 'VREM', 'semesterSelect', 'yearSelect', 'paritySelect'];
+    updateTriggers.forEach(id => {
+        document.getElementById(id)?.addEventListener('change', updateAuditoriesBusyStatus);
+        document.querySelector(`select[name='${id}']`)?.addEventListener('change', updateAuditoriesBusyStatus);
+    });
+</script>
+
+<script>
+    function validateRequiredFieldsForBuilding() {
+        const day = document.querySelector("select[name='DEN']").value;
+        const time = document.querySelector("select[name='VREM']").value;
+        const parity = document.getElementById('paritySelect').value;
+        const buildingSelect = document.getElementById('createBuilding');
+        const audSelect = document.getElementById('createAud');
+
+        if (!day || !time || !parity) {
+            buildingSelect.value = "";
+            buildingSelect.disabled = true;
+
+            audSelect.innerHTML = '<option value="">Выберите аудиторию</option>';
+            audSelect.disabled = true;
+        } else {
+            buildingSelect.disabled = false;
+        }
+    }
+</script>
+
+<script>
+    function resetTeachersIfFieldsEmpty() {
+        const day = document.querySelector("select[name='DEN']").value;
+        const time = document.querySelector("select[name='VREM']").value;
+        const parity = document.getElementById('paritySelect').value;
+        const teacherSelect = document.getElementById('createTeacher');
+
+        if (!day || !time || !parity) {
+            teacherSelect.innerHTML = '<option value="">Выберите преподавателя</option>';
+            teacherSelect.disabled = true;
+        }
+    }
+</script>
+
+<script>
+    const teacherDeps = ["DEN", "VREM", "paritySelect", "semesterSelect", "yearSelect"];
+    teacherDeps.forEach(id => {
+        document.getElementById(id)?.addEventListener('change', () => {
+            resetTeachersIfFieldsEmpty();
+            updateTeachersBusyStatus(); // обновляем только при этих изменениях
+        });
+        document.querySelector(`select[name='${id}']`)?.addEventListener('change', () => {
+            resetTeachersIfFieldsEmpty();
+            updateTeachersBusyStatus();
+        });
+    });
+
+    document.getElementById('openCreateModalBtn').addEventListener('click', () => {
+        setTimeout(() => {
+            resetTeachersIfFieldsEmpty();
+            updateTeachersBusyStatus();
+        }, 100);
+    });
+</script>
+
+<script>
+    async function updateFreeTimes() {
+        const day = document.querySelector("select[name='DEN']").value;
+        const parity = document.getElementById("paritySelect").value;
+        const semester = document.getElementById("semesterSelect").value;
+        const year = document.getElementById("yearSelect").value;
+        const groupNo = document.getElementById("createGroupNo").value;
+        const timeSelect = document.querySelector("select[name='VREM']");
+
+        if (!day || !parity || !semester || !year || !groupNo) return;
+
+        try {
+            const response = await fetch(`/SchedulerNPubl/GetFreeTimes?` +
+                `day=${encodeURIComponent(day)}` +
+                `&parity=${encodeURIComponent(parity)}` +
+                `&semester=${semester}` +
+                `&year=${year}` +
+                `&groupNo=${groupNo}`);
+            const freeTimes = await response.json();
+
+            timeSelect.innerHTML = '<option value="">Выберите время</option>';
+            freeTimes.forEach(time => {
+                const option = document.createElement("option");
+                option.value = time;
+                option.textContent = time;
+                timeSelect.appendChild(option);
+            });
+
+            timeSelect.disabled = freeTimes.length === 0;
+        } catch (err) {
+            console.error("Ошибка при загрузке времени:", err);
+        }
+    }
+
+    const timeDeps = ["DEN", "paritySelect", "semesterSelect", "yearSelect"];
+    timeDeps.forEach(id => {
+        document.getElementById(id)?.addEventListener("change", updateFreeTimes);
+        document.querySelector(`select[name='${id}']`)?.addEventListener("change", updateFreeTimes);
+    });
+
+    // при открытии модального окна — тоже обновить
+    document.getElementById('openCreateModalBtn').addEventListener('click', () => {
+        setTimeout(updateFreeTimes, 100);
+    });
+</script>
+
+<script>
+    async function updateTeachersBusyStatus() {
+        const day = document.querySelector("select[name='DEN']").value;
+        const time = document.querySelector("select[name='VREM']").value;
+        const semester = document.getElementById('semesterSelect').value;
+        const year = document.getElementById('yearSelect').value;
+        const parity = document.getElementById('paritySelect').value;
+        const teacherSelect = document.getElementById('createTeacher');
+
+        if (!day || !time || !semester || !year || !parity) return;
+
+        try {
+            const response = await fetch(`/SchedulerNPubl/GetBusyTeachers?` +
+                `day=${encodeURIComponent(day)}` +
+                `&time=${encodeURIComponent(time)}` +
+                `&semester=${semester}` +
+                `&year=${year}` +
+                `&parity=${encodeURIComponent(parity)}`);
+            const data = await response.json();
+
+            teacherSelect.innerHTML = '<option value="">Выберите преподавателя</option>';
+
+            data.forEach(t => {
+                const option = document.createElement('option');
+                option.value = t.value;
+                option.textContent = t.text;
+                option.title = t.tooltip || "";
+                if (t.busy) {
+                    option.style.color = 'red';
+                    option.disabled = true;
+                }
+                teacherSelect.appendChild(option);
+            });
+
+            teacherSelect.disabled = false;
+        } catch (error) {
+            console.error('Ошибка загрузки преподавателей:', error);
+        }
+    }
+</script>
+
+<script>
+    const buildingDeps = ["DEN", "VREM", "paritySelect"];
+    buildingDeps.forEach(id => {
+        document.getElementById(id)?.addEventListener('change', validateRequiredFieldsForBuilding);
+        document.querySelector(`select[name='${id}']`)?.addEventListener('change', validateRequiredFieldsForBuilding);
+    });
+
+    // Вызов при открытии модального окна
+    document.getElementById('openCreateModalBtn').addEventListener('click', () => {
+        setTimeout(validateRequiredFieldsForBuilding, 100); // немного подождем появления модалки
+    });
 </script>
 
 

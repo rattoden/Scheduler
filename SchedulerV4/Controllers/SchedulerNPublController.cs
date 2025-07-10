@@ -155,37 +155,12 @@ namespace SchedulerV4.Controllers
             existingData = existingData?.Trim().ToLower() ?? "";
             newData = newData?.Trim().ToLower() ?? "";
 
-            bool existingIsRange = existingData == "чет" || existingData == "неч" || existingData == "чет/неч";
-            bool newIsRange = newData == "чет" || newData == "неч" || newData == "чет/неч";
-
-            bool existingIsDates = !existingIsRange && !string.IsNullOrEmpty(existingData);
-            bool newIsDates = !newIsRange && !string.IsNullOrEmpty(newData);
-
-            // Если один из них - диапазон (чет/неч), а другой - конкретные даты — конфликт
-            if ((existingIsRange && newIsDates) || (existingIsDates && newIsRange))
-                return true;
-
-            // Если оба диапазоны — конфликт при пересечении чет/неч
-            if (existingIsRange && newIsRange)
-            {
-                if (existingData == "чет/неч" || newData == "чет/неч")
-                    return true;
-                if (existingData == newData)
-                    return true;
+            // если один "чет", другой "неч" — НЕ конфликт
+            if ((existingData == "чет" && newData == "неч") || (existingData == "неч" && newData == "чет"))
                 return false;
-            }
 
-            // Если оба конкретные даты — проверяем точное совпадение (можно усложнить, если нужно)
-            if (existingIsDates && newIsDates)
-            {
-                // Простая проверка на равенство строк с датами — считаем конфликтом, если совпадают
-                if (existingData == newData)
-                    return true;
-                return false;
-            }
-
-            // Если оба пустые или невалидные — считаем нет конфликта
-            return false;
+            // во всех остальных случаях — конфликт
+            return true;
         }
 
         // POST: Create
@@ -365,38 +340,57 @@ namespace SchedulerV4.Controllers
             if (string.IsNullOrEmpty(buildingName))
                 return Json(new List<object>());
 
+            var normalizedBuilding = buildingName.Trim().ToLower();
+            var normalizedDay = (day ?? "").Trim().ToLower();
+            var normalizedTime = (time ?? "").Trim();
+            var normalizedParity = (parity ?? "").Trim().ToLower();
+
+            // Предзагрузка справочников
+            var groupDict = _context.GROUPS.ToDictionary(
+    g => g.GROUPID,
+    g => g.GROUPNO.ToString()
+);
+            var discDict = _context.DISCIPLINES.ToDictionary(d => d.ID, d => d.NAME ?? "");
+
+            // Все аудитории здания
             var allAuditories = _context.SPR_AUDITORY
                 .Where(a => _context.SPR_BUILDING.Any(b => b.NAME == buildingName && b.ID_BUILDING == a.ID_BUILDING))
+                .AsNoTracking()
                 .ToList();
 
+            // Все занятия в семестре/году
             var busySchedulesRaw = _context.SHEDULE_N_PUBL
-    .Where(s =>
-        s.ZDANIE != null &&
-        s.DEN != null &&
-        s.VREM != null &&
-        s.SEMESTR == semester &&
-        s.YEARF == year)
-    .ToList(); // <-- сначала забрали все записи
+                .AsNoTracking()
+                .Where(s =>
+                    s.ZDANIE != null &&
+                    s.DEN != null &&
+                    s.VREM != null &&
+                    s.SEMESTR == semester &&
+                    s.YEARF == year)
+                .ToList();
 
+            // Фильтрация по занятым
             var busySchedules = busySchedulesRaw
                 .Where(s =>
-                    s.ZDANIE.Trim().ToLower() == buildingName.Trim().ToLower() &&
-                    s.DEN.Trim().ToLower() == day.Trim().ToLower() &&
-                    s.VREM.Trim() == time.Trim() &&
-                    IsParityConflict((s.DATA ?? "").ToLower(), parity.ToLower()))
+                    s.ZDANIE.Trim().ToLower() == normalizedBuilding &&
+                    s.DEN.Trim().ToLower() == normalizedDay &&
+                    s.VREM.Trim() == normalizedTime &&
+                    IsParityConflict((s.DATA ?? "").ToLower(), normalizedParity))
                 .ToList();
 
+            // Информация по занятым аудиториям
             var busyAuditoriesInfo = busySchedules
                 .GroupBy(s => (s.AUDITORIYA ?? "").Trim().ToLower())
                 .ToDictionary(g => g.Key, g =>
                 {
-                    var s = g.First(); // Берем первое занятие
-                    var groupNo = _context.GROUPS.FirstOrDefault(gr => gr.GROUPID == s.GROUPID)?.GROUPNO.ToString() ?? "";
-                    var discipline = _context.DISCIPLINES.FirstOrDefault(d => d.ID == s.DISCIPL_NUM)?.NAME ?? "";
+                    var s = g.First();
+                    var groupNo = groupDict.ContainsKey(s.GROUPID) ? groupDict[s.GROUPID] : "";
+                    var discipline = discDict.ContainsKey(s.DISCIPL_NUM) ? discDict[s.DISCIPL_NUM] : "";
                     var prepod = s.PREPODAVATEL ?? "";
                     return $"Группа {groupNo}, дисциплина: \"{discipline}\", преподаватель: {prepod}";
                 });
 
+            // Формируем результат
             var result = allAuditories.Select(a =>
             {
                 var audName = (a.NOMER ?? "").Trim();
@@ -413,6 +407,120 @@ namespace SchedulerV4.Controllers
 
             return Json(result);
         }
+
+
+        [HttpGet]
+        public IActionResult GetBusyTeachers(string day, string time, int semester, int year, string parity)
+        {
+            if (string.IsNullOrWhiteSpace(day) || string.IsNullOrWhiteSpace(time) || string.IsNullOrWhiteSpace(parity))
+                return Json(new List<object>());
+
+            var normalizedDay = day.Trim().ToLower();
+            var normalizedTime = time.Trim();
+            var normalizedParity = parity.Trim().ToLower();
+
+            // Предзагрузка справочников
+            var groupDict = _context.GROUPS.ToDictionary(
+    g => g.GROUPID,
+    g => g.GROUPNO.ToString());
+            var discDict = _context.DISCIPLINES.ToDictionary(d => d.ID, d => d.NAME ?? "");
+
+            // Получаем расписание
+            var allSchedules = _context.SHEDULE_N_PUBL
+                .AsNoTracking()
+                .Where(s =>
+                    s.SEMESTR == semester &&
+                    s.YEARF == year &&
+                    s.DEN != null &&
+                    s.VREM != null)
+                .ToList();
+
+            // Фильтрация в памяти
+            var busySchedules = allSchedules
+                .Where(s =>
+                    s.DEN.Trim().ToLower() == normalizedDay &&
+                    s.VREM.Trim() == normalizedTime &&
+                    IsParityConflict((s.DATA ?? "").ToLower(), normalizedParity))
+                .ToList();
+
+            // Группировка по преподавателю
+            var busyInfo = busySchedules
+                .Where(s => !string.IsNullOrWhiteSpace(s.PREPODAVATEL))
+                .GroupBy(s => s.PREPODAVATEL.Trim())
+                .ToDictionary(g => g.Key, g =>
+                {
+                    var s = g.First();
+                    var groupNo = groupDict.ContainsKey(s.GROUPID) ? groupDict[s.GROUPID] : "";
+                    var discipline = discDict.ContainsKey(s.DISCIPL_NUM) ? discDict[s.DISCIPL_NUM] : "";
+                    return $"Группа {groupNo}, дисциплина: \"{discipline}\"";
+                });
+
+            // Список всех преподавателей
+            var allPreps = _context.SOTRUDNIK
+                .Select(p => new
+                {
+                    FullName = (p.FIRSTNAME + " " + p.MIDDLENAME + " " + p.LASTNAME).Trim()
+                })
+                .ToList();
+
+            var result = allPreps.Select(p => new
+            {
+                value = p.FullName,
+                text = busyInfo.ContainsKey(p.FullName) ? $"{p.FullName} (занят)" : p.FullName,
+                busy = busyInfo.ContainsKey(p.FullName),
+                tooltip = busyInfo.ContainsKey(p.FullName) ? busyInfo[p.FullName] : ""
+            });
+
+            return Json(result);
+        }
+
+        [HttpGet]
+        public IActionResult GetFreeTimes(string day, string parity, int semester, int year, int groupNo)
+        {
+            if (string.IsNullOrWhiteSpace(day) || string.IsNullOrWhiteSpace(parity))
+                return Json(new List<string>());
+
+            var dayLower = day.Trim().ToLower();
+            var parityLower = parity.Trim().ToLower();
+
+            // Получаем ID группы
+            var groupId = _context.GROUPS
+                .AsNoTracking()
+                .Where(g => g.GROUPNO == groupNo)
+                .Select(g => g.GROUPID)
+                .FirstOrDefault();
+
+            // Если не нашли группу, возвращаем пусто
+            if (groupId == 0)
+                return Json(new List<string>());
+
+            var allTimes = new List<string> { "08:00", "09:40", "11:20", "13:30", "15:10", "16:50", "18:25", "20:00" };
+
+            // Загружаем в память, т.к. IsParityConflict — метод C#, а не SQL
+            var schedules = _context.SHEDULE_N_PUBL
+                .AsNoTracking()
+                .Where(s =>
+                    s.DEN != null &&
+                    s.VREM != null &&
+                    s.DATA != null &&
+                    s.SEMESTR == semester &&
+                    s.YEARF == year &&
+                    s.DEN.Trim().ToLower() == dayLower &&
+                    s.GROUPID == groupId)
+                .ToList();
+
+            var busyTimes = schedules
+                .Where(s => IsParityConflict(s.DATA.ToLower(), parityLower))
+                .Select(s => s.VREM.Trim())
+                .Distinct()
+                .ToList();
+
+            var freeTimes = allTimes.Except(busyTimes).ToList();
+
+            return Json(freeTimes);
+        }
+
+
         [HttpGet]
         public async Task<IActionResult> GetLessonDetailsAsync(int lessonId)
         {

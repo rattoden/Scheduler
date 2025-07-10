@@ -13,9 +13,9 @@ var connectionString = $"Server=localhost;Database={dbFilePath};User=SYSDBA;Pass
 builder.Services.AddControllersWithViews();
 
 // Добавляем DbContext с созданной строкой подключения
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseFirebird(connectionString),
-    ServiceLifetime.Singleton
+builder.Services.AddDbContext<ApplicationDbContext>(
+    options => options.UseFirebird(connectionString),
+    ServiceLifetime.Scoped
 );
 
 var app = builder.Build();
