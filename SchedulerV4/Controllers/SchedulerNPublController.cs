@@ -323,15 +323,17 @@ namespace SchedulerV4.Controllers
             return order.IndexOf(time) + 1;
         }
 
-        public async Task<IActionResult> Delete(int id, int? groupId, int? tip, int? semester, int? year)
+        [HttpPost]
+        public async Task<IActionResult> DeleteAjax(int id)
         {
             var schedule = await _context.SHEDULE_N_PUBL.FindAsync(id);
             if (schedule != null)
             {
                 _context.SHEDULE_N_PUBL.Remove(schedule);
                 await _context.SaveChangesAsync();
+                return Ok();
             }
-            return RedirectToAction(nameof(Index), new { groupId, tip, semester, year });
+            return NotFound();
         }
 
         [HttpGet]
